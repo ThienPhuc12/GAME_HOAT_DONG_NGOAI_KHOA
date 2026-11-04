@@ -1,0 +1,1506 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>8 cầu thủ pixel 64×96 · Cầu Rồng & Eiffel · ESP32</title>
+<style>
+:root{color-scheme:light;--ink:#182b31;--muted:#61716f;--paper:#f4f3ec;--line:#d9dfd6;--green:#16634d}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1080px;margin:auto;padding:38px 24px 28px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--green)}h1{font-size:clamp(26px,4vw,40px);line-height:1.2;letter-spacing:-.045em;margin:9px 0 10px}p{margin:0;color:var(--muted)}.tag{white-space:nowrap;border:1px solid var(--line);border-radius:20px;padding:6px 13px;font-size:12px;background:#fff}.controls{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px 20px;display:flex;gap:14px 20px;align-items:end;flex-wrap:wrap}label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:650}select,button{font:inherit;min-height:40px;border:1px solid #bdcbc3;border-radius:7px;background:#fff;color:var(--ink);padding:7px 11px}button{font-weight:700;cursor:pointer;background:var(--green);color:#fff;border-color:var(--green);min-width:132px}button:disabled{opacity:.5;cursor:default}select:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #c28c27;outline-offset:3px}.scrub{flex:1;min-width:150px}.speed{min-width:110px}input[type=range]{accent-color:var(--green);width:100%;margin:10px 0;height:18px}.hint{font-size:12px;margin:9px 3px 22px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:15px}.card-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px}.name{font-size:20px;font-weight:800;letter-spacing:-.025em}.country{font-size:11px;color:var(--muted);letter-spacing:.13em;font-weight:650}.number{font:800 27px/1 ui-monospace,Consolas,monospace;color:var(--green)}.vn .number{color:#c53437}.stage{padding:10px 20px;background:#102d2c;display:flex;justify-content:center;overflow:hidden}.stage canvas{display:block;width:384px;max-width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}.card-foot{display:flex;justify-content:space-between;padding:11px 20px;font-size:12px;color:var(--muted)}.dot{display:inline-block;width:7px;height:7px;background:#38a47b;margin-right:6px;border-radius:50%}details{margin-top:22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:15px 20px}summary{font-weight:750;cursor:pointer}details p{font-size:13px;margin:12px 0}.data-head{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin-top:14px}.data-head label{flex-direction:row;align-items:center}.data-grid{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:22px;margin-top:14px}pre{margin:0;overflow:auto;background:#142c30;color:#d9f1df;border-radius:8px;padding:14px;font:12px/1.35 ui-monospace,Consolas,monospace;letter-spacing:.09em}.palette{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-content:start}.swatch{display:flex;align-items:center;gap:8px;font:11px ui-monospace,Consolas,monospace}.swatch i{width:19px;height:19px;display:inline-block;border:1px solid #abb8ac;border-radius:3px}.transparent{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0/8px 8px}.tip{margin:20px 2px 0;font-size:12px}code{font-family:ui-monospace,Consolas,monospace;font-size:.94em}noscript{display:block;padding:20px;background:#fff3cd} @media(max-width:680px){main{padding:24px 14px}header{display:block}.tag{display:inline-block;margin-top:14px}.cards{grid-template-columns:1fr}.controls{padding:15px;gap:12px}.controls label{flex:1;min-width:135px}.controls button{width:100%}.data-grid{grid-template-columns:1fr}.palette{grid-template-columns:repeat(3,1fr)}pre{font-size:11px}.card-head{padding:14px 18px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+.stage{padding:10px 8px;background:#101c35}.stage canvas{width:360px}.player-picker{margin:0 20px 14px}.landmark-caption{text-align:center;font-size:10px;letter-spacing:.16em;color:var(--muted);padding:0 10px 13px}.card-foot{gap:8px;flex-wrap:wrap}.name{font-size:clamp(17px,2.2vw,21px)}
+main{max-width:1240px}.stage canvas{width:480px}.palette{max-height:480px;overflow:auto}.data-grid{grid-template-columns:minmax(0,1fr) 270px}@media(max-width:680px){.data-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<main>
+<header><div><div class="eyebrow">VIET–FRANCE PENALTY / 8 PIXEL CHARACTERS</div><h1>Mô hình cầu thủ · Việt–Pháp</h1><p>8 nhân vật · 64×96 pixel, 32 màu. Sút và bắt bóng đều 12 khung; thủ môn sát vạch cầu môn, bóng lớn hơn và thay đổi theo phối cảnh.</p></div><span class="tag">64 × 96 px · 32 màu · ESP32 thường</span></header>
+<section class="controls" aria-label="Điều khiển mô hình">
+<label>Góc nhìn khi đứng<select id="view"><option value="front">Chính diện</option><option value="back">Sau lưng</option><option value="side">Bên hông</option></select></label>
+<label>Động tác<select id="motion"><option value="idle">Đứng yên · xem chi tiết</option><option value="shot">Sút / bắt bóng theo vai</option></select></label>
+<button id="play" type="button" aria-pressed="true">Tạm dừng</button>
+<label class="scrub">Khung hình <span id="frame-label">1 / 6 · Chuẩn bị</span><input id="frame" type="range" min="0" max="11" value="0" step="1" aria-label="Chọn khung hình"></label>
+<label class="speed">Tốc độ <span id="speed-label">100%</span><input id="speed" type="range" min="3" max="12" value="7" step="1" aria-label="Tốc độ hoạt ảnh"></label>
+</section>
+<p class="hint">Chọn cầu thủ và góc nhìn để xem chi tiết. Chọn “Sút / bắt bóng theo vai” để phát hoạt ảnh: cầu thủ sút nhìn từ sau, thủ môn nhìn chính diện.</p>
+<section class="cards" aria-label="Chọn mô hình cầu thủ hai đội"><article class="card vn">
+ <div class="card-head"><div><div class="country">VIỆT NAM</div><div class="name" id="name-vn">Quang Hải</div></div><span class="number" id="number-vn">19</span></div>
+ <label class="player-picker"><span>Chọn cầu thủ</span><select id="player-vn"><option value="vn">Quang Hải #19</option><option value="cong_phuong">Công Phượng #10</option><option value="tien_linh">Tiến Linh #22</option><option value="van_lam">Đặng Văn Lâm #1 · Thủ môn</option></select></label>
+ <div class="stage"><canvas id="canvas-vn" width="480" height="480" role="img" aria-label="Mô hình cầu thủ Việt Nam trên nền Cầu Rồng"></canvas></div>
+ <div class="card-foot"><span id="role-vn">Cầu thủ sút</span><span id="pose-vn">Sau lưng</span></div>
+ <div class="landmark-caption">CẦU RỒNG · ĐÀ NẴNG</div>
+</article><article class="card fr">
+ <div class="card-head"><div><div class="country">PHÁP</div><div class="name" id="name-fr">Mbappé</div></div><span class="number" id="number-fr">10</span></div>
+ <label class="player-picker"><span>Chọn cầu thủ</span><select id="player-fr"><option value="fr">Mbappé #10</option><option value="zidane">Zinedine Zidane #10</option><option value="henry">Thierry Henry #12</option><option value="lloris">Hugo Lloris #1 · Thủ môn</option></select></label>
+ <div class="stage"><canvas id="canvas-fr" width="480" height="480" role="img" aria-label="Mô hình cầu thủ Pháp trên nền tháp Eiffel"></canvas></div>
+ <div class="card-foot"><span id="role-fr">Cầu thủ sút</span><span id="pose-fr">Sau lưng</span></div>
+ <div class="landmark-caption">THÁP EIFFEL · PARIS</div>
+</article></section>
+<details><summary>Xem dữ liệu pixel để chỉnh sửa</summary>
+<p>Mỗi ký tự là một pixel; dấu chấm là nền trong suốt. Mô hình và nền được dựng từ code, không tải ảnh hoặc thư viện ngoài.</p>
+<div class="data-head"><label>Cầu thủ <select id="inspect"><option value="vn">Quang Hải #19</option><option value="fr">Mbappé #10</option><option value="cong_phuong">Công Phượng #10</option><option value="tien_linh">Tiến Linh #22</option><option value="van_lam">Đặng Văn Lâm #1 · Thủ môn</option><option value="zidane">Zinedine Zidane #10</option><option value="henry">Thierry Henry #12</option><option value="lloris">Hugo Lloris #1 · Thủ môn</option></select></label><span id="data-info">96 hàng × 64 cột</span></div>
+<div class="data-grid"><pre id="matrix" aria-label="Ma trận pixel hiện tại"></pre><div class="palette" id="palette" aria-label="Bảng màu"></div></div>
+<p>Gửi nguyên file HTML và <code>cau-thu-pixel-esp32.h</code> cho người lập trình game. <code>MODEL_DATA</code> chứa 8 mẫu nhân vật; <code>POSES</code> là tư thế sút; <code>KEEPER_POSES</code> là 12 tư thế bắt bóng. Cầu thủ sút có 12 tư thế; chân được tính bằng khớp 3D có chiều dài cố định. Bóng chỉ rời chân ở thời điểm chạm, và có nhịp nghỉ trước lượt sút tiếp theo. Dùng <code>PIXEL_PLAYERS.getFrame('van_lam', 'front', 4, 'save')</code> hoặc <code>getFrame('vn', 'back', 3, 'shot')</code>. Các ID <code>vn</code> (Quang Hải), <code>fr</code> (Mbappé) được giữ để tương thích bản trước.</p>
+<p>Sprite nén 5 bit/pixel, kích thước gốc 64×96 px; khi phóng ×2 là 128×192 px. Hàm giải mã một hàng dùng 128 byte; hàm vẽ có bộ đệm tối đa 256 byte, không cần PSRAM. Nền 120×120 được lưu thành lệnh vẽ hình chữ nhật và phóng ×2 cho màn 240×240. Trên ESP32, vẽ nền khi đổi cảnh và khôi phục vùng sprite cũ trước khi vẽ khung mới. Dữ liệu ESP32 dùng số khung theo từng cầu thủ: 15 khung gồm 3 góc đứng + 12 động tác sút; thủ môn có 15 khung gồm 3 góc đứng + 12 động tác bắt bóng. Hàm getShotState(elapsedMs) cung cấp đường bóng sút; getKeeperState(elapsedMs) cung cấp vị trí nhảy, điểm bắt bóng và cỡ bóng. Thủ môn ở gần khung thành được vẽ 32×48 trong góc máy này từ dữ liệu gốc 64×96, lấy mẫu pixel gần nhất. Bóng 8 px ở gần, còn 6 px tại khung thành. Sau khi sửa dữ liệu HTML, cần xuất lại header tương ứng.</p>
+</details>
+<p class="tip">Mở file bằng Edge/Chrome để xem, bằng VS Code để sửa. Nhân vật được vẽ lại bằng các mảng pixel có chi tiết tóc, mắt, nếp áo và giày; số áo theo lựa chọn thiết kế. Màu được lượng tử hóa về RGB565 giống dữ liệu ESP32.</p>
+<noscript>Hãy bật JavaScript trong trình duyệt để xem mô hình và hoạt ảnh.</noscript>
+</main>
+<script>
+
+
+
+'use strict';
+/*
+ * HIGH DETAIL PIXEL MODELS, 64 x 96 logical pixels, 32 palette slots.
+ * Drawn from editable pixel geometry, not upscaled from the old 32x32 art.
+ * No image files / network / dependencies. getFrame() returns 96 x 64 symbols.
+ * Authoring/pose calculation runs here only; ESP32 uses prepacked 5-bit frames.
+ */
+const WIDTH=64,HEIGHT=96;
+const PALETTE_SYMBOLS='.ONHhqrSsUuDEePMJjLlXAaVKknBbvWC';
+const FRAME_NAMES=['Sẵn sàng','Chuyển trọng tâm','Lấy đà','Co chân','Cuối đà','Tăng tốc','Chạm bóng','Vung theo đà','Hãm chân','Thu chân','Lấy lại thăng bằng','Nghỉ'];
+const SAVE_FRAME_NAMES=['Sẵn sàng','Hạ trọng tâm','Nạp lực','Đạp chân','Bật nhảy','Vươn người','Chạm bóng','Ôm bóng','Tiếp đất','Đứng dậy','Bước về vị trí','Sẵn sàng'];
+const SAVE_DURATIONS_MS=[220,90,90,70,70,70,80,120,180,180,180,220];
+const SHOT_DURATIONS_MS=[260,90,85,80,70,60,50,60,90,110,140,260];
+const MODEL_DATA={
+  "vn": {
+    "name": "Quang Hải",
+    "number": "19",
+    "team": "vn",
+    "role": "shooter",
+    "hairStyle": "swept",
+    "beard": "none",
+    "baseColors": {
+      "H": "#1c2635",
+      "h": "#354255",
+      "S": "#edb17c",
+      "s": "#ba7853",
+      "U": "#ffd19a",
+      "J": "#d72b3e",
+      "j": "#981d37",
+      "L": "#f55253",
+      "A": "#ffd45a",
+      "K": "#c3263c",
+      "k": "#861e35"
+    }
+  },
+  "fr": {
+    "name": "Mbappé",
+    "number": "10",
+    "team": "fr",
+    "role": "shooter",
+    "hairStyle": "crop",
+    "beard": "none",
+    "baseColors": {
+      "H": "#271f25",
+      "h": "#49383b",
+      "S": "#b87548",
+      "s": "#7e472e",
+      "U": "#da9a65",
+      "J": "#294c95",
+      "j": "#182b60",
+      "L": "#5075b8",
+      "A": "#c9d8ee",
+      "K": "#dc3445",
+      "k": "#971d38"
+    }
+  },
+  "cong_phuong": {
+    "name": "Công Phượng",
+    "number": "10",
+    "team": "vn",
+    "role": "shooter",
+    "hairStyle": "waves",
+    "beard": "none",
+    "baseColors": {
+      "H": "#181d28",
+      "h": "#3c3640",
+      "S": "#e5aa78",
+      "s": "#b37550",
+      "U": "#ffd19e",
+      "J": "#d72b3e",
+      "j": "#981d37",
+      "L": "#f55253",
+      "A": "#ffd45a",
+      "K": "#c3263c",
+      "k": "#861e35"
+    }
+  },
+  "tien_linh": {
+    "name": "Tiến Linh",
+    "number": "22",
+    "team": "vn",
+    "role": "shooter",
+    "hairStyle": "undercut",
+    "beard": "none",
+    "baseColors": {
+      "H": "#1f2532",
+      "h": "#4c4146",
+      "S": "#dfa073",
+      "s": "#a86b48",
+      "U": "#f9c48d",
+      "J": "#d72b3e",
+      "j": "#981d37",
+      "L": "#f55253",
+      "A": "#ffd45a",
+      "K": "#c3263c",
+      "k": "#861e35"
+    }
+  },
+  "van_lam": {
+    "name": "Đặng Văn Lâm",
+    "number": "1",
+    "team": "vn",
+    "role": "keeper",
+    "hairStyle": "swept",
+    "beard": "full",
+    "baseColors": {
+      "H": "#25202b",
+      "h": "#4a3540",
+      "S": "#efbb94",
+      "s": "#bf8d69",
+      "U": "#ffdab0",
+      "J": "#2eb99b",
+      "j": "#14725e",
+      "L": "#68d4b5",
+      "A": "#e6d66c",
+      "K": "#289b87",
+      "k": "#166052"
+    }
+  },
+  "zidane": {
+    "name": "Zinedine Zidane",
+    "number": "10",
+    "team": "fr",
+    "role": "shooter",
+    "hairStyle": "bald",
+    "beard": "none",
+    "baseColors": {
+      "H": "#50413c",
+      "h": "#78604c",
+      "S": "#dfb385",
+      "s": "#b4855c",
+      "U": "#f5ce9b",
+      "J": "#294c95",
+      "j": "#182b60",
+      "L": "#5075b8",
+      "A": "#c9d8ee",
+      "K": "#dc3445",
+      "k": "#971d38"
+    }
+  },
+  "henry": {
+    "name": "Thierry Henry",
+    "number": "12",
+    "team": "fr",
+    "role": "shooter",
+    "hairStyle": "buzz",
+    "beard": "goatee",
+    "baseColors": {
+      "H": "#262027",
+      "h": "#4b3938",
+      "S": "#ae7955",
+      "s": "#794b36",
+      "U": "#d39c70",
+      "J": "#294c95",
+      "j": "#182b60",
+      "L": "#5075b8",
+      "A": "#c9d8ee",
+      "K": "#dc3445",
+      "k": "#971d38"
+    }
+  },
+  "lloris": {
+    "name": "Hugo Lloris",
+    "number": "1",
+    "team": "fr",
+    "role": "keeper",
+    "hairStyle": "swept",
+    "beard": "full",
+    "baseColors": {
+      "H": "#3b2929",
+      "h": "#6a493d",
+      "S": "#e4ae84",
+      "s": "#b17e5b",
+      "U": "#ffd4a3",
+      "J": "#e78a36",
+      "j": "#a64f26",
+      "L": "#ffb65b",
+      "A": "#f4e7ba",
+      "K": "#c97730",
+      "k": "#874b29"
+    }
+  }
+};
+function mix(a,b,t){
+ const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
+ return '#'+[16,8,0].map(s=>Math.round(((x>>s)&255)*(1-t)+((y>>s)&255)*t).toString(16).padStart(2,'0')).join('');
+}
+function rgb565(hex){
+ const n=parseInt(hex.slice(1),16);
+ return (((n>>>19)&31)<<11)|(((n>>>10)&63)<<5)|((n>>>3)&31);
+}
+function rgb565Hex(n){
+ const r=(n>>>11)&31,g=(n>>>5)&63,b=n&31;
+ return '#'+[(r<<3)|(r>>>2),(g<<2)|(g>>>4),(b<<3)|(b>>>2)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+const paletteCache=new Map();
+function getPalette(id){
+ if(!Object.prototype.hasOwnProperty.call(MODEL_DATA,id))throw new RangeError('Unknown player: '+id);
+ if(paletteCache.has(id))return {...paletteCache.get(id)};
+ const c=MODEL_DATA[id].baseColors;
+ const p={
+  '.':null,O:'#101421',N:'#293249',H:mix(c.H,'#101421',0.24),h:mix(c.h,c.H,0.20),q:mix(c.h,'#8492a5',0.12),r:mix(c.h,'#b0b7c7',0.19),
+  S:c.S,s:c.s,U:c.U,u:mix(c.S,c.U,0.38),D:mix(c.s,'#302536',0.30),
+  E:'#edf3ff',e:'#9baec3',P:'#ffffff',M:mix(c.s,'#8b3434',0.35),
+  J:c.J,j:c.j,L:c.L,l:mix(c.J,c.L,0.42),X:mix(c.j,'#101421',0.36),
+  A:c.A,a:mix(c.A,'#77532b',0.48),V:mix(c.A,'#fff5d9',0.62),
+  K:c.K,k:c.k,n:mix(c.K,c.L,0.43),
+  B:'#1c2436',b:'#667b94',v:'#c6d6e7',W:'#fff5e2',C:'#b3c4c7'
+ };
+ const quantized=Object.fromEntries([...PALETTE_SYMBOLS].map(s=>[s,p[s]===null?null:rgb565Hex(rgb565(p[s]))]));
+ paletteCache.set(id,quantized);return {...quantized};
+}
+function getRGB565Palette(id){const p=getPalette(id);return [...PALETTE_SYMBOLS].map(s=>s==='.'?0:rgb565(p[s]));}
+function actionFor(id){
+ if(!Object.prototype.hasOwnProperty.call(MODEL_DATA,id))throw new RangeError('Unknown player: '+id);
+ return MODEL_DATA[id].role==='keeper'?'save':'shot';
+}
+function blankMatrix(){return Array.from({length:HEIGHT},()=>Array(WIDTH).fill('.'));}
+function put(m,x,y,c){if(x>=0&&x<WIDTH&&y>=0&&y<HEIGHT)m[y][x]=c;}
+function rect(m,x,y,w,h,c){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)put(m,xx,yy,c);}
+function ellipse(m,cx,cy,rx,ry,c){
+ for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++)
+ if(((x-cx)*(x-cx))/(rx*rx)+((y-cy)*(y-cy))/(ry*ry)<=1)put(m,x,y,c);
+}
+function poly(m,points,c){
+ const minY=Math.max(0,Math.floor(Math.min(...points.map(p=>p[1])))),maxY=Math.min(HEIGHT-1,Math.ceil(Math.max(...points.map(p=>p[1]))));
+ for(let y=minY;y<=maxY;y++){
+  const cuts=[],scan=y+0.5;
+  for(let i=0;i<points.length;i++){
+   const a=points[i],b=points[(i+1)%points.length];
+   if((a[1]<=scan&&b[1]>scan)||(b[1]<=scan&&a[1]>scan))cuts.push(a[0]+(scan-a[1])*(b[0]-a[0])/(b[1]-a[1]));
+  }
+  cuts.sort((a,b)=>a-b);
+  for(let i=0;i+1<cuts.length;i+=2)for(let x=Math.ceil(cuts[i]-0.5);x<cuts[i+1]-0.5;x++)put(m,x,y,c);
+ }
+}
+function line(m,a,b,c,width=1){
+ let[x,y]=a;const[xx,yy]=b,dx=Math.abs(xx-x),dy=-Math.abs(yy-y),sx=x<xx?1:-1,sy=y<yy?1:-1;let err=dx+dy;
+ for(;;){rect(m,x-Math.floor(width/2),y-Math.floor(width/2),width,width,c);if(x===xx&&y===yy)break;
+ const e=2*err;if(e>=dy){err+=dy;x+=sx;}if(e<=dx){err+=dx;y+=sy;}}
+}
+function moved(points,dx,dy){return points.map(([x,y])=>[x+dx,y+dy]);}
+function hairTexture(m,style){
+ const mask=m.map(row=>row.map(c=>c==='H'));
+ const cropped=style==='crop'||style==='buzz';
+ if(cropped||style==='waves'){
+  for(let y=2;y<31;y++)for(let x=16;x<49;x++){
+   if(!mask[y][x]||!mask[y-1][x]||!mask[y+1][x]||!mask[y][x-1]||!mask[y][x+1])continue;
+   const code=(x*17+y*29+(x*y)%13)%47;
+   if(code<7)put(m,x,y,'h');
+   if(code===0&&y<14)put(m,x,y,'q');
+   if(style==='waves'&&code===5&&mask[y][x+1])put(m,x+1,y,'h');
+  }
+ }else{
+  const patches=[
+   ['h',[[21,10],[24,6],[30,4],[28,8],[24,12]]],
+   ['h',[[29,10],[33,5],[39,5],[38,9],[34,12]]],
+   ['h',[[21,17],[23,13],[28,11],[27,14],[24,18]]],
+   ['h',[[35,16],[38,11],[42,9],[42,13],[39,17]]],
+   ['h',[[26,23],[29,18],[33,16],[33,21],[30,24]]],
+   ['h',[[34,26],[36,22],[40,19],[40,23],[37,27]]],
+   ['q',[[23,8],[26,5],[29,5],[26,7],[24,9]]],
+   ['q',[[33,8],[36,6],[38,6],[36,8],[34,10]]]
+  ];
+  for(const[c,points]of patches){
+   const brush=blankMatrix();poly(brush,points,c);
+   for(let y=1;y<31;y++)for(let x=16;x<49;x++)if(mask[y][x]&&brush[y][x]===c)put(m,x,y,c);
+  }
+  if(mask[5][27])put(m,27,5,'r');
+ }
+}
+function faceHead(model,view){
+ const m=blankMatrix(),style=model.hairStyle,bald=style==='bald';
+ if(view==='side'){
+  poly(m,[[24,6],[33,3],[40,6],[43,12],[43,18],[48,23],[46,25],[44,25],[44,30],[39,34],[30,34],[25,30],[23,24],[20,20],[19,12]],'O');
+  poly(m,[[26,10],[34,5],[39,8],[41,14],[41,20],[46,23],[42,24],[42,29],[38,32],[31,31],[28,27],[26,21],[22,18],[22,12]],'S');
+  poly(m,[[28,9],[34,6],[39,9],[39,15],[35,18],[30,16]],'U');
+  poly(m,[[39,15],[41,18],[46,23],[42,24],[42,29],[38,32],[35,31],[39,27]],'s');
+  if(!bald){
+   const shape=style==='crop'||style==='buzz'?
+    [[21,19],[20,12],[24,7],[31,4],[38,5],[42,9],[42,12],[36,12],[32,16],[31,22],[27,24],[25,28],[22,24]]:
+    [[20,20],[18,12],[21,8],[22,5],[27,4],[29,1],[34,3],[38,2],[42,6],[44,10],[41,13],[36,12],[33,17],[31,18],[31,23],[27,25],[25,28],[22,24]];
+   poly(m,shape,'H');hairTexture(m,style);
+   if(style==='crop'||style==='undercut')poly(m,[[23,18],[27,17],[29,21],[27,27],[24,26]],'D');
+  }else{
+   poly(m,[[21,15],[24,13],[25,22],[27,27],[25,29],[22,24]],'H');
+   poly(m,[[24,7],[30,4],[35,5],[33,8],[27,10]],'U');
+  }
+  ellipse(m,28,23,3,4,'O');ellipse(m,28,23,2,3,'S');put(m,28,22,'U');line(m,[28,23],[29,25],'s');
+  if(model.beard==='full')poly(m,[[31,27],[35,28],[39,27],[43,27],[42,31],[38,33],[32,32]],'D');
+  if(model.beard==='goatee')poly(m,[[38,29],[42,28],[41,32],[38,33],[36,31]],'D');
+  poly(m,[[36,17],[39,16],[42,18],[41,19],[37,18]],'H');
+  rect(m,37,20,5,3,'E');rect(m,40,20,2,3,'H');put(m,40,20,'P');line(m,[37,23],[41,23],'s');
+  line(m,[42,27],[44,27],'M');line(m,[39,29],[42,29],'M');put(m,38,30,'u');
+ }else{
+  ellipse(m,18,22,3,4,'O');ellipse(m,46,22,3,4,'O');
+  ellipse(m,18,22,2,3,'S');ellipse(m,46,22,2,3,'s');put(m,18,21,'U');
+  poly(m,[[22,6],[27,3],[37,3],[42,7],[44,15],[44,26],[40,32],[35,35],[28,35],[23,32],[20,27],[20,14]],'O');
+  poly(m,[[24,8],[29,5],[36,5],[40,9],[42,15],[42,25],[38,31],[34,34],[29,34],[24,30],[22,25],[22,14]],'S');
+  poly(m,[[25,9],[30,6],[35,7],[33,13],[27,16],[23,24],[23,15]],'U');
+  poly(m,[[39,12],[42,16],[42,25],[38,30],[34,33],[30,32],[37,28],[39,22]],'s');
+  if(view==='back'){
+   if(!bald){
+    const top=style==='waves'?[[19,13],[19,8],[23,6],[24,3],[29,3],[32,1],[36,3],[40,3],[44,8],[45,15],[43,25],[38,30],[29,30],[23,26],[21,21]]:
+     [[20,14],[21,8],[25,5],[30,2],[36,3],[41,6],[44,12],[44,20],[41,26],[36,29],[28,29],[23,25]];
+    poly(m,top,'H');hairTexture(m,style);
+    poly(m,[[23,24],[28,27],[36,27],[41,24],[39,29],[35,31],[28,30]],style==='waves'?'H':'D');
+    line(m,[26,30],[37,30],'s');
+   }else{
+    poly(m,[[21,17],[23,17],[24,25],[28,29],[36,29],[41,25],[42,17],[44,17],[43,26],[38,31],[28,31],[22,26]],'h');
+    poly(m,[[26,8],[32,5],[38,8],[36,13],[29,13],[25,16]],'U');
+   }
+  }else{
+   if(model.beard==='full')poly(m,[[23,27],[26,28],[29,29],[35,29],[38,27],[41,26],[39,32],[35,34],[29,34],[25,31]],'D');
+   if(model.beard==='goatee')ellipse(m,32,32,3,2,'D');
+   poly(m,[[23,18],[26,17],[30,19],[29,20],[24,19]],'H');
+   poly(m,[[34,19],[38,17],[41,18],[40,19],[35,20]],'H');
+   rect(m,24,21,6,3,'E');rect(m,35,21,6,3,'E');
+   rect(m,27,21,2,3,'H');rect(m,36,21,2,3,'H');put(m,27,21,'P');put(m,36,21,'P');
+   put(m,24,23,'e');put(m,40,23,'e');line(m,[25,24],[29,24],'u');line(m,[35,24],[39,24],'s');
+   rect(m,31,23,2,3,'u');put(m,31,23,'U');line(m,[32,26],[34,26],'s');
+   line(m,[28,29],[30,30],'M');line(m,[30,30],[34,30],'M');line(m,[34,30],[36,28],'D');put(m,32,31,'u');
+   if(!bald){
+    let shape;
+    if(style==='crop'||style==='buzz')shape=[[20,15],[20,10],[24,6],[30,4],[37,5],[41,8],[44,13],[43,17],[40,14],[36,14],[32,13],[27,14],[24,15],[22,18]];
+    else if(style==='undercut')shape=[[20,17],[19,10],[23,6],[26,6],[27,2],[34,4],[38,3],[43,8],[44,14],[40,16],[38,12],[33,14],[29,12],[25,16],[23,19]];
+    else if(style==='waves')shape=[[19,20],[18,14],[19,9],[22,7],[22,4],[27,4],[30,1],[34,3],[38,2],[40,5],[43,6],[45,11],[44,18],[41,20],[39,15],[36,17],[33,14],[29,16],[26,15],[23,20]];
+    else shape=[[20,18],[18,12],[21,8],[22,5],[26,5],[28,2],[33,3],[36,1],[39,4],[42,4],[44,8],[45,13],[43,18],[40,16],[38,13],[35,15],[31,13],[27,15],[24,14],[22,19]];
+    poly(m,shape,'H');hairTexture(m,style);
+    if(style==='undercut'){line(m,[21,17],[22,22],'D',2);line(m,[42,17],[42,21],'D',2);}
+   }else{
+    line(m,[21,17],[22,23],'h');line(m,[42,17],[42,23],'h');
+    poly(m,[[25,8],[30,5],[36,6],[39,9],[34,9],[29,11]],'U');
+   }
+  }
+ }
+ return m;
+}
+const DIGITS={
+ '0':['.WWW.','WW.WW','WW.WW','WW.WW','WW.WW','WW.WW','.WWW.'],
+ '1':['..WW.','.WWW.','..WW.','..WW.','..WW.','..WW.','.WWWW'],
+ '2':['.WWW.','WW.WW','...WW','..WW.','.WW..','WW...','WWWWW'],
+ '3':['WWWW.','...WW','...WW','.WWW.','...WW','...WW','WWWW.'],
+ '4':['...WW','..WWW','.WWWW','WW.WW','WWWWW','...WW','...WW'],
+ '5':['WWWWW','WW...','WWWW.','...WW','...WW','WW.WW','.WWW.'],
+ '6':['.WWW.','WW...','WW...','WWWW.','WW.WW','WW.WW','.WWW.'],
+ '7':['WWWWW','...WW','..WW.','..WW.','.WW..','.WW..','.WW..'],
+ '8':['.WWW.','WW.WW','WW.WW','.WWW.','WW.WW','WW.WW','.WWW.'],
+ '9':['.WWW.','WW.WW','WW.WW','.WWWW','...WW','...WW','.WWW.']
+};
+function jerseyNumber(m,number,cx,y){
+ const left=cx-Math.floor((number.length*6-1)/2);
+ for(const [n,d]of [...number].entries()){
+  const mask=DIGITS[d];
+  mask.forEach((row,yy)=>[...row].forEach((s,x)=>{if(s==='W')put(m,left+n*6+x+1,y+yy+1,'X');}));
+  mask.forEach((row,yy)=>[...row].forEach((s,x)=>{if(s==='W')put(m,left+n*6+x,y+yy,'W');}));
+ }
+}
+
+const SHOT_KEYS=[
+ {dx:0,dy:0,foot:[40,0,0],angle:0,lh:[15,64],rh:[49,64]},
+ {dx:-1,dy:0,foot:[41,-2,1],angle:0.05,lh:[14,63],rh:[50,63]},
+ {dx:-2,dy:1,foot:[42,-5,3],angle:0.12,lh:[12,61],rh:[51,62]},
+ {dx:-2,dy:1,foot:[43,-8,6],angle:0.20,lh:[10,58],rh:[52,60]},
+ {dx:-1,dy:1,foot:[44,-10,9],angle:0.25,lh:[9,55],rh:[53,58]},
+ {dx:0,dy:0,foot:[43,-4,4],angle:-0.35,lh:[10,53],rh:[53,57]},
+ {dx:1,dy:0,foot:[42,6,1],angle:-1.25,lh:[11,53],rh:[52,56]},
+ {dx:1,dy:-1,foot:[41,12,5],angle:-1.45,lh:[12,54],rh:[52,57]},
+ {dx:0,dy:-1,foot:[40,15,8],angle:-1.50,lh:[13,56],rh:[51,59]},
+ {dx:0,dy:0,foot:[40,10,5],angle:-0.70,lh:[14,59],rh:[50,61]},
+ {dx:0,dy:0,foot:[40,3,1],angle:-0.20,lh:[15,62],rh:[49,63]},
+ {dx:0,dy:0,foot:[40,0,0],angle:0,lh:[15,64],rh:[49,64]}
+];
+// Offline 3-D inverse kinematics: fixed 10.5/11.5 bone lengths, knee bends
+// toward the goal. Camera projection shortens a forward-pointing leg naturally.
+function solveLeg3D(hip,foot){
+ const d=foot.map((v,i)=>v-hip[i]),length=Math.hypot(...d),upper=10.5,lower=11.5;
+ if(length>upper+lower+1e-6||length<Math.abs(upper-lower))throw new RangeError('Unreachable leg pose');
+ const direction=d.map(v=>v/length),a=(upper*upper-lower*lower+length*length)/(2*length);
+ let bend=[-direction[0]*direction[1],1-direction[1]*direction[1],-direction[2]*direction[1]];
+ const size=Math.hypot(...bend);bend=bend.map(v=>v/size);
+ const h=Math.sqrt(Math.max(0,upper*upper-a*a));
+ return [hip,hip.map((v,i)=>v+direction[i]*a+bend[i]*h),foot];
+}
+function projectLeg(chain){return chain.map(([x,depth,height])=>[Math.round(x),Math.round(89-depth*0.34-height*0.94)]);}
+const SHOT_ARM_KEYS={"left":[[16,52],[15,51],[14,49],[13,47],[12,45],[12,44],[13,44],[14,45],[14,47],[15,49],[16,51],[16,52]],"right":[[48,52],[49,51],[50,50],[51,49],[52,48],[52,47],[51,47],[51,48],[50,49],[49,50],[48,51],[48,52]]};
+// Arm keys include foreshortening as hands turn toward the goal.
+const POSES=SHOT_KEYS.map((key,index)=>{
+ const hipHeight=(89-(70+key.dy))/0.94;
+ const worldLl=solveLeg3D([26+key.dx,0,hipHeight],[24,0,0]);
+ const worldRl=solveLeg3D([38+key.dx,0,hipHeight],key.foot);
+ return {dx:key.dx,dy:key.dy,la:[[21+key.dx,40+key.dy],[SHOT_ARM_KEYS.left[index][0]+key.dx,SHOT_ARM_KEYS.left[index][1]+key.dy],key.lh],
+  ra:[[43+key.dx,40+key.dy],[SHOT_ARM_KEYS.right[index][0]+key.dx,SHOT_ARM_KEYS.right[index][1]+key.dy],key.rh],ll:projectLeg(worldLl),rl:projectLeg(worldRl),
+  worldLl,worldRl,bootAngle:key.angle};
+});
+
+const KEEPER_POSES=[
+  {
+    "dx": 0,
+    "dy": 0,
+    "la": [
+      [
+        21,
+        40
+      ],
+      [
+        15,
+        48
+      ],
+      [
+        17,
+        58
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        40
+      ],
+      [
+        49,
+        48
+      ],
+      [
+        47,
+        58
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        70
+      ],
+      [
+        24,
+        79
+      ],
+      [
+        22,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        70
+      ],
+      [
+        40,
+        79
+      ],
+      [
+        42,
+        89
+      ]
+    ],
+    "angle": 0
+  },
+  {
+    "dx": 0,
+    "dy": 1,
+    "la": [
+      [
+        21,
+        41
+      ],
+      [
+        16,
+        50
+      ],
+      [
+        18,
+        61
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        41
+      ],
+      [
+        48,
+        50
+      ],
+      [
+        46,
+        61
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        71
+      ],
+      [
+        23,
+        80
+      ],
+      [
+        21,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        71
+      ],
+      [
+        41,
+        80
+      ],
+      [
+        43,
+        89
+      ]
+    ],
+    "angle": 0
+  },
+  {
+    "dx": 0,
+    "dy": 2,
+    "la": [
+      [
+        21,
+        42
+      ],
+      [
+        17,
+        52
+      ],
+      [
+        20,
+        63
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        42
+      ],
+      [
+        47,
+        52
+      ],
+      [
+        44,
+        63
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        72
+      ],
+      [
+        22,
+        81
+      ],
+      [
+        20,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        72
+      ],
+      [
+        42,
+        81
+      ],
+      [
+        44,
+        89
+      ]
+    ],
+    "angle": -0.015
+  },
+  {
+    "dx": 0,
+    "dy": 1,
+    "la": [
+      [
+        21,
+        41
+      ],
+      [
+        17,
+        47
+      ],
+      [
+        20,
+        55
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        41
+      ],
+      [
+        48,
+        47
+      ],
+      [
+        46,
+        53
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        71
+      ],
+      [
+        24,
+        79
+      ],
+      [
+        22,
+        87
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        71
+      ],
+      [
+        40,
+        79
+      ],
+      [
+        42,
+        87
+      ]
+    ],
+    "angle": 0.02
+  },
+  {
+    "dx": 0,
+    "dy": 0,
+    "la": [
+      [
+        21,
+        40
+      ],
+      [
+        17,
+        40
+      ],
+      [
+        23,
+        43
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        40
+      ],
+      [
+        50,
+        42
+      ],
+      [
+        48,
+        39
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        70
+      ],
+      [
+        24,
+        77
+      ],
+      [
+        22,
+        84
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        70
+      ],
+      [
+        40,
+        77
+      ],
+      [
+        42,
+        84
+      ]
+    ],
+    "angle": 0.08
+  },
+  {
+    "dx": 0,
+    "dy": -1,
+    "la": [
+      [
+        21,
+        39
+      ],
+      [
+        22,
+        33
+      ],
+      [
+        26,
+        29
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        39
+      ],
+      [
+        48,
+        31
+      ],
+      [
+        49,
+        26
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        69
+      ],
+      [
+        24,
+        76
+      ],
+      [
+        21,
+        82
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        69
+      ],
+      [
+        40,
+        76
+      ],
+      [
+        42,
+        82
+      ]
+    ],
+    "angle": 0.16
+  },
+  {
+    "dx": 0,
+    "dy": -2,
+    "la": [
+      [
+        21,
+        38
+      ],
+      [
+        23,
+        29
+      ],
+      [
+        29,
+        22
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        38
+      ],
+      [
+        47,
+        27
+      ],
+      [
+        49,
+        17
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        68
+      ],
+      [
+        24,
+        75
+      ],
+      [
+        20,
+        81
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        68
+      ],
+      [
+        40,
+        75
+      ],
+      [
+        42,
+        81
+      ]
+    ],
+    "angle": 0.24
+  },
+  {
+    "dx": 0,
+    "dy": -1,
+    "la": [
+      [
+        21,
+        39
+      ],
+      [
+        31,
+        30
+      ],
+      [
+        40,
+        22
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        39
+      ],
+      [
+        47,
+        29
+      ],
+      [
+        48,
+        19
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        69
+      ],
+      [
+        24,
+        76
+      ],
+      [
+        21,
+        83
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        69
+      ],
+      [
+        40,
+        76
+      ],
+      [
+        42,
+        83
+      ]
+    ],
+    "angle": 0.32
+  },
+  {
+    "dx": 0,
+    "dy": 1,
+    "la": [
+      [
+        21,
+        41
+      ],
+      [
+        32,
+        36
+      ],
+      [
+        43,
+        29
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        41
+      ],
+      [
+        47,
+        33
+      ],
+      [
+        49,
+        24
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        71
+      ],
+      [
+        23,
+        80
+      ],
+      [
+        21,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        71
+      ],
+      [
+        41,
+        80
+      ],
+      [
+        43,
+        89
+      ]
+    ],
+    "angle": 0.16
+  },
+  {
+    "dx": 0,
+    "dy": 2,
+    "la": [
+      [
+        21,
+        42
+      ],
+      [
+        27,
+        40
+      ],
+      [
+        36,
+        39
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        42
+      ],
+      [
+        47,
+        39
+      ],
+      [
+        44,
+        37
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        72
+      ],
+      [
+        23,
+        81
+      ],
+      [
+        22,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        72
+      ],
+      [
+        41,
+        81
+      ],
+      [
+        43,
+        89
+      ]
+    ],
+    "angle": 0.05
+  },
+  {
+    "dx": 0,
+    "dy": 0,
+    "la": [
+      [
+        21,
+        40
+      ],
+      [
+        19,
+        49
+      ],
+      [
+        22,
+        58
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        40
+      ],
+      [
+        47,
+        49
+      ],
+      [
+        45,
+        58
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        70
+      ],
+      [
+        25,
+        78
+      ],
+      [
+        25,
+        87
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        70
+      ],
+      [
+        40,
+        79
+      ],
+      [
+        42,
+        89
+      ]
+    ],
+    "angle": 0.01
+  },
+  {
+    "dx": 0,
+    "dy": 0,
+    "la": [
+      [
+        21,
+        40
+      ],
+      [
+        15,
+        48
+      ],
+      [
+        17,
+        58
+      ]
+    ],
+    "ra": [
+      [
+        43,
+        40
+      ],
+      [
+        49,
+        48
+      ],
+      [
+        47,
+        58
+      ]
+    ],
+    "ll": [
+      [
+        26,
+        70
+      ],
+      [
+        24,
+        79
+      ],
+      [
+        22,
+        89
+      ]
+    ],
+    "rl": [
+      [
+        38,
+        70
+      ],
+      [
+        40,
+        79
+      ],
+      [
+        42,
+        89
+      ]
+    ],
+    "angle": 0
+  }
+];
+function drawBoot(m,cx,cy,direction,angle=0){
+
+ if(Math.abs(angle)>1e-9){
+  const local=blankMatrix();drawBoot(local,16,16,direction,0);
+  const cs=Math.cos(angle),sn=Math.sin(angle);
+  for(let y=cy-12;y<=cy+12;y++)for(let x=cx-12;x<=cx+12;x++){
+   const a=x-cx,b=y-cy,sx=Math.round(cs*a+sn*b+16),sy=Math.round(-sn*a+cs*b+16);
+   if(sx>=0&&sx<WIDTH&&sy>=0&&sy<HEIGHT&&local[sy][sx]!=='.')put(m,x,y,local[sy][sx]);
+  }
+  return;
+ }
+
+ const points=[[-4,-2],[3,-2],[4,0],[7,1],[7,6],[-6,6],[-6,1]];
+ poly(m,points.map(([x,y])=>[cx+x*direction,cy+y]),'O');
+ poly(m,[[-3,-1],[2,-1],[3,1],[6,2],[6,4],[-5,4],[-5,1]].map(([x,y])=>[cx+x*direction,cy+y]),'v');
+ line(m,[cx-4,cy+4],[cx+5,cy+4],'b');
+ line(m,[cx-4,cy+5],[cx+5,cy+5],'B');
+ line(m,[cx-3,cy+1],[cx+1,cy+1],'W',2);
+ put(m,cx,cy+2,'O');put(m,cx+2,cy+2,'b');
+}
+function drawLeg(m,joints,direction,bootAngle=0){
+ const[a,b,c]=joints;
+ line(m,a,b,'O',8);line(m,b,c,'O',8);
+ line(m,a,b,'S',6);line(m,[a[0]-2,a[1]],[b[0]-2,b[1]],'U',1);
+ line(m,b,c,'K',6);line(m,[b[0]+2,b[1]],[c[0]+2,c[1]],'k',1);
+ line(m,[b[0]-2,b[1]+1],[c[0]-2,c[1]],'n',1);
+ put(m,b[0]-1,b[1]-1,'s');drawBoot(m,c[0],c[1],direction,bootAngle);
+}
+function drawArm(m,joints,keeper){
+ const[a,b,c]=joints;
+ line(m,a,b,'O',8);line(m,b,c,'O',7);
+ line(m,a,b,keeper?'J':'S',6);line(m,b,c,keeper?'J':'S',5);
+ line(m,[b[0]-2,b[1]],[c[0]-2,c[1]],keeper?'L':'U',1);
+ line(m,[b[0]+2,b[1]],[c[0]+2,c[1]],keeper?'j':'s',1);
+ if(!keeper){
+  const end=[Math.round(a[0]+(b[0]-a[0])*0.52),Math.round(a[1]+(b[1]-a[1])*0.52)];
+  line(m,a,end,'J',7);line(m,[a[0]-2,a[1]],[end[0]-2,end[1]],'L');
+  rect(m,end[0]-3,end[1]-1,6,2,'A');put(m,end[0]-2,end[1]-1,'V');
+ }
+ poly(m,[[c[0]-3,c[1]-2],[c[0]+2,c[1]-2],[c[0]+4,c[1]],[c[0]+3,c[1]+5],[c[0]-2,c[1]+5],[c[0]-4,c[1]+2]],'O');
+ rect(m,c[0]-2,c[1]-1,5,5,keeper?'W':'S');
+ line(m,[c[0]+2,c[1]],[c[0]+2,c[1]+3],keeper?'C':'s');
+ put(m,c[0]-2,c[1],keeper?'P':'U');put(m,c[0],c[1]+3,keeper?'v':'u');
+ if(keeper){line(m,[c[0]-2,c[1]+3],[c[0]+2,c[1]+3],'b');put(m,c[0],c[1]-1,'v');}
+}
+function drawKit(m,pose,model,view){
+ const dx=pose.dx,dy=pose.dy;
+ poly(m,moved([[21,61],[43,61],[45,71],[42,75],[33,74],[32,69],[31,74],[21,75],[19,71]],dx,dy),'O');
+ poly(m,moved([[22,62],[31,62],[31,70],[29,73],[22,73],[21,70]],dx,dy),'J');
+ poly(m,moved([[33,62],[42,62],[43,70],[41,73],[34,72]],dx,dy),'j');
+ rect(m,22+dx,64+dy,2,7,'L');rect(m,41+dx,64+dy,1,6,'a');
+ line(m,[24+dx,72+dy],[29+dx,72+dy],'j');line(m,[35+dx,71+dy],[41+dx,72+dy],'X');
+ poly(m,moved([[23,36],[28,35],[36,35],[41,37],[45,39],[45,44],[43,47],[43,61],[40,64],[23,64],[21,61],[21,46],[18,44],[18,39]],dx,dy),'O');
+ poly(m,moved([[24,37],[29,36],[35,36],[40,38],[43,40],[43,44],[41,46],[41,60],[39,62],[24,62],[23,60],[23,45],[20,43],[20,40]],dx,dy),'J');
+ poly(m,moved([[24,40],[29,39],[35,40],[38,45],[37,55],[29,54],[26,57],[24,54]],dx,dy),'l');
+ poly(m,moved([[40,42],[42,44],[41,59],[38,62],[36,60],[38,55]],dx,dy),'j');
+ line(m,[24+dx,43+dy],[24+dx,58+dy],'L');
+ line(m,[41+dx,47+dy],[40+dx,59+dy],'X');
+ line(m,[26+dx,58+dy],[31+dx,60+dy],'j');line(m,[34+dx,60+dy],[38+dx,59+dy],'L');
+ put(m,27+dx,56+dy,'L');put(m,36+dx,57+dy,'j');
+ rect(m,28+dx,33+dy,9,6,'O');rect(m,29+dx,33+dy,7,5,'S');rect(m,34+dx,34+dy,2,4,'s');
+ if(view==='back'){
+  line(m,[27+dx,37+dy],[37+dx,37+dy],'A',2);line(m,[29+dx,38+dy],[35+dx,38+dy],'a');
+ }else{
+  line(m,[27+dx,37+dy],[31+dx,41+dy],'A',2);line(m,[31+dx,41+dy],[37+dx,37+dy],'A',2);
+  put(m,28+dx,38+dy,'V');put(m,36+dx,38+dy,'V');
+  rect(m,37+dx,42+dy,3,2,'A');put(m,38+dx,41+dy,'V');
+ }
+ jerseyNumber(m,model.number,32+dx,46+dy);
+}
+function rotateKeeperFixed(source,angle){
+ if(!angle)return source;
+ const cs=Math.cos(angle),sn=Math.sin(angle),cx=31.5,cy=47.5,out=blankMatrix();
+ // Fixed pivot and scale: no per-frame automatic zoom or centering.
+ for(let y=0;y<HEIGHT;y++)for(let x=0;x<WIDTH;x++){
+  const a=x-cx,b=y-cy,sx=Math.round(cs*a+sn*b+cx),sy=Math.round(-sn*a+cs*b+cy);
+  if(sx>=0&&sx<WIDTH&&sy>=0&&sy<HEIGHT)out[y][x]=source[sy][sx];
+ }
+ return out;
+}
+
+function drawFrontGlove(m,c){
+ poly(m,[[c[0]-3,c[1]-2],[c[0]+2,c[1]-2],[c[0]+4,c[1]],[c[0]+3,c[1]+5],[c[0]-2,c[1]+5],[c[0]-4,c[1]+2]],'O');
+ rect(m,c[0]-2,c[1]-1,5,5,'W');line(m,[c[0]+2,c[1]],[c[0]+2,c[1]+3],'C');
+ put(m,c[0]-2,c[1],'P');put(m,c[0],c[1]+3,'v');
+ line(m,[c[0]-2,c[1]+3],[c[0]+2,c[1]+3],'b');put(m,c[0],c[1]-1,'v');
+}
+
+const frameCache=new Map();
+function getFrame(id,view='back',frame=0,motion='shot'){
+ if(!Object.prototype.hasOwnProperty.call(MODEL_DATA,id))throw new RangeError('Unknown player: '+id);
+ const model=MODEL_DATA[id],keeper=model.role==='keeper';
+ if(!['front','back','side'].includes(view))throw new RangeError('Unknown view');
+ if(!['idle','shot','save'].includes(motion))throw new RangeError('Unknown motion');
+ if(!Number.isInteger(frame)||frame<0||frame>=12)throw new RangeError('Unknown frame for this role');
+ if(motion==='shot'&&(keeper||view!=='back'))throw new RangeError('Shot requires a shooter back view');
+ if(motion==='save'&&(!keeper||view!=='front'))throw new RangeError('Save requires a goalkeeper front view');
+ const key=[id,view,frame,motion].join(':');if(frameCache.has(key))return frameCache.get(key).slice();
+ const pose=motion==='save'?KEEPER_POSES[frame]:(keeper?KEEPER_POSES[0]:POSES[motion==='shot'?frame:0]);
+ let m=blankMatrix();
+ if(view==='side'){
+  drawLeg(m,[[29,70],[29,78],[29,89]],-1);drawLeg(m,[[36,70],[37,78],[38,89]],1);
+  poly(m,[[27,61],[40,61],[41,72],[36,75],[27,73]],'O');
+  poly(m,[[28,62],[38,62],[39,71],[35,73],[28,72]],'j');rect(m,28,64,2,7,'l');
+  poly(m,[[29,36],[34,35],[39,37],[41,43],[40,61],[37,64],[27,63],[26,46]],'O');
+  poly(m,[[30,37],[34,36],[38,39],[39,44],[38,61],[28,61],[28,44]],'J');
+  rect(m,29,44,2,13,'L');rect(m,37,45,2,15,'j');rect(m,31,33,6,6,'S');
+  drawArm(m,[[32,40],[32,52],[34,65]],keeper);
+ }else{
+  drawLeg(m,pose.ll,-1);drawLeg(m,pose.rl,1,pose.bootAngle||0);
+  drawArm(m,pose.la,keeper);drawArm(m,pose.ra,keeper);
+  drawKit(m,pose,model,view);
+ }
+ const head=faceHead(model,view),hx=view==='side'?0:pose.dx,hy=1+(view==='side'?0:pose.dy);
+ for(let y=0;y<38;y++)for(let x=0;x<WIDTH;x++)if(head[y][x]!=='.')put(m,x+hx,y+hy,head[y][x]);
+ if(motion==='save'){drawFrontGlove(m,pose.la[2]);drawFrontGlove(m,pose.ra[2]);m=rotateKeeperFixed(m,pose.angle);}
+ const rows=m.map(row=>row.join(''));frameCache.set(key,rows);return rows.slice();
+}
+function getPackedFrame(id,view='back',frame=0,motion='shot'){
+ const flat=getFrame(id,view,frame,motion).join(''),out=new Uint8Array(WIDTH*HEIGHT*5/8);
+ let acc=0,bits=0,p=0;
+ for(const s of flat){acc=(acc<<5)|PALETTE_SYMBOLS.indexOf(s);bits+=5;if(bits>=8){bits-=8;out[p++]=(acc>>>bits)&255;acc&=(1<<bits)-1;}}
+ if(bits)out[p]=acc<<(8-bits);
+ return out;
+}
+const BACKGROUND_PALETTE=["#101c35","#253756","#455477","#aa6a74","#edb380","#fbe1a0","#d99a43","#996139","#253e50","#3c6070","#19382f","#245340","#356747","#829b78","#dce3bd","#4c7367"];
+const BACKGROUND_RECTS={"vn":[[0,0,0,120,120],[1,0,12,120,46],[2,0,39,120,19],[5,8,8,1,1],[5,31,5,1,1],[5,52,13,1,1],[5,73,6,1,1],[5,108,12,1,1],[3,4,19,18,2],[3,11,17,13,2],[2,35,12,18,2],[2,39,10,7,2],[3,101,24,19,2],[4,17,17,10,10],[4,15,19,14,6],[5,18,18,7,2],[8,0,40,10,16],[4,2,45,1,2],[4,6,45,1,2],[8,12,34,7,22],[4,14,39,1,2],[8,22,38,11,18],[4,24,43,1,2],[4,28,43,1,2],[8,36,32,8,24],[4,38,37,1,2],[4,42,37,1,2],[8,47,40,8,16],[4,49,45,1,2],[4,53,45,1,2],[8,58,35,9,21],[4,60,40,1,2],[4,64,40,1,2],[8,70,39,8,17],[4,72,44,1,2],[4,76,44,1,2],[8,82,33,7,23],[4,84,38,1,2],[8,92,40,9,16],[4,94,45,1,2],[4,98,45,1,2],[8,104,35,8,21],[4,106,40,1,2],[4,110,40,1,2],[8,114,39,6,17],[4,116,44,1,2],[9,0,55,120,12],[2,0,57,120,1],[2,4,60,10,1],[2,28,63,15,1],[2,66,60,17,1],[2,100,64,13,1],[8,15,50,4,16],[7,14,49,6,2],[8,53,50,4,16],[7,52,49,6,2],[8,88,50,4,16],[7,87,49,6,2],[7,0,49,120,3],[6,0,48,120,2],[5,0,48,120,1],[7,0,40,7,7],[7,1,39,7,7],[7,2,39,7,7],[7,3,38,7,7],[7,4,37,7,7],[7,5,36,7,7],[7,6,36,7,7],[7,7,35,7,7],[7,8,34,7,7],[7,9,33,7,7],[7,10,33,7,7],[7,11,32,7,7],[7,11,32,7,7],[7,12,32,7,7],[7,13,32,7,7],[7,14,32,7,7],[7,15,32,7,7],[7,16,32,7,7],[7,17,33,7,7],[7,18,33,7,7],[7,19,33,7,7],[7,20,33,7,7],[7,21,33,7,7],[7,22,33,7,7],[7,22,33,7,7],[7,23,34,7,7],[7,24,34,7,7],[7,25,35,7,7],[7,26,36,7,7],[7,27,37,7,7],[7,28,37,7,7],[7,29,38,7,7],[7,30,39,7,7],[7,31,40,7,7],[7,32,40,7,7],[7,33,41,7,7],[7,33,41,7,7],[7,34,41,7,7],[7,35,41,7,7],[7,36,41,7,7],[7,37,41,7,7],[7,38,41,7,7],[7,39,40,7,7],[7,40,40,7,7],[7,41,40,7,7],[7,42,40,7,7],[7,43,40,7,7],[7,44,40,7,7],[7,44,40,7,7],[7,45,39,7,7],[7,46,38,7,7],[7,47,38,7,7],[7,48,37,7,7],[7,49,36,7,7],[7,50,35,7,7],[7,51,34,7,7],[7,52,33,7,7],[7,53,33,7,7],[7,54,32,7,7],[7,55,31,7,7],[7,55,31,7,7],[7,56,31,7,7],[7,57,31,7,7],[7,58,31,7,7],[7,59,31,7,7],[7,60,31,7,7],[7,61,32,7,7],[7,62,32,7,7],[7,63,32,7,7],[7,64,32,7,7],[7,65,32,7,7],[7,66,32,7,7],[7,67,32,7,7],[7,67,32,7,7],[7,68,33,7,7],[7,69,33,7,7],[7,70,34,7,7],[7,71,35,7,7],[7,72,35,7,7],[7,73,36,7,7],[7,74,36,7,7],[7,75,37,7,7],[7,76,38,7,7],[7,77,38,7,7],[7,78,39,7,7],[7,78,39,7,7],[7,79,38,7,7],[7,80,38,7,7],[7,81,37,7,7],[7,82,37,7,7],[7,83,36,7,7],[7,84,36,7,7],[7,85,35,7,7],[7,86,35,7,7],[7,87,34,7,7],[7,87,34,7,7],[7,88,33,7,7],[7,89,32,7,7],[7,89,31,7,7],[7,90,30,7,7],[7,91,29,7,7],[7,92,28,7,7],[7,92,27,7,7],[7,93,26,7,7],[7,94,25,7,7],[6,1,41,5,5],[6,2,40,5,5],[6,3,40,5,5],[6,4,39,5,5],[6,5,38,5,5],[6,6,37,5,5],[6,7,37,5,5],[6,8,36,5,5],[6,9,35,5,5],[6,10,34,5,5],[6,11,34,5,5],[6,12,33,5,5],[6,12,33,5,5],[6,13,33,5,5],[6,14,33,5,5],[6,15,33,5,5],[6,16,33,5,5],[6,17,33,5,5],[6,18,34,5,5],[6,19,34,5,5],[6,20,34,5,5],[6,21,34,5,5],[6,22,34,5,5],[6,23,34,5,5],[6,23,34,5,5],[6,24,35,5,5],[6,25,35,5,5],[6,26,36,5,5],[6,27,37,5,5],[6,28,38,5,5],[6,29,38,5,5],[6,30,39,5,5],[6,31,40,5,5],[6,32,41,5,5],[6,33,41,5,5],[6,34,42,5,5],[6,34,42,5,5],[6,35,42,5,5],[6,36,42,5,5],[6,37,42,5,5],[6,38,42,5,5],[6,39,42,5,5],[6,40,41,5,5],[6,41,41,5,5],[6,42,41,5,5],[6,43,41,5,5],[6,44,41,5,5],[6,45,41,5,5],[6,45,41,5,5],[6,46,40,5,5],[6,47,39,5,5],[6,48,39,5,5],[6,49,38,5,5],[6,50,37,5,5],[6,51,36,5,5],[6,52,35,5,5],[6,53,34,5,5],[6,54,34,5,5],[6,55,33,5,5],[6,56,32,5,5],[6,56,32,5,5],[6,57,32,5,5],[6,58,32,5,5],[6,59,32,5,5],[6,60,32,5,5],[6,61,32,5,5],[6,62,33,5,5],[6,63,33,5,5],[6,64,33,5,5],[6,65,33,5,5],[6,66,33,5,5],[6,67,33,5,5],[6,68,33,5,5],[6,68,33,5,5],[6,69,34,5,5],[6,70,34,5,5],[6,71,35,5,5],[6,72,36,5,5],[6,73,36,5,5],[6,74,37,5,5],[6,75,37,5,5],[6,76,38,5,5],[6,77,39,5,5],[6,78,39,5,5],[6,79,40,5,5],[6,79,40,5,5],[6,80,39,5,5],[6,81,39,5,5],[6,82,38,5,5],[6,83,38,5,5],[6,84,37,5,5],[6,85,37,5,5],[6,86,36,5,5],[6,87,36,5,5],[6,88,35,5,5],[6,88,35,5,5],[6,89,34,5,5],[6,90,33,5,5],[6,90,32,5,5],[6,91,31,5,5],[6,92,30,5,5],[6,93,29,5,5],[6,93,28,5,5],[6,94,27,5,5],[6,95,26,5,5],[5,3,42,1,1],[5,4,41,1,1],[5,5,41,1,1],[5,6,40,1,1],[5,7,39,1,1],[5,8,38,1,1],[5,9,38,1,1],[5,10,37,1,1],[5,11,36,1,1],[5,12,35,1,1],[5,13,35,1,1],[5,14,34,1,1],[5,14,34,1,1],[5,15,34,1,1],[5,16,34,1,1],[5,17,34,1,1],[5,18,34,1,1],[5,19,34,1,1],[5,20,35,1,1],[5,21,35,1,1],[5,22,35,1,1],[5,23,35,1,1],[5,24,35,1,1],[5,25,35,1,1],[5,25,35,1,1],[5,26,36,1,1],[5,27,36,1,1],[5,28,37,1,1],[5,29,38,1,1],[5,30,39,1,1],[5,31,39,1,1],[5,32,40,1,1],[5,33,41,1,1],[5,34,42,1,1],[5,35,42,1,1],[5,36,43,1,1],[5,36,43,1,1],[5,37,43,1,1],[5,38,43,1,1],[5,39,43,1,1],[5,40,43,1,1],[5,41,43,1,1],[5,42,42,1,1],[5,43,42,1,1],[5,44,42,1,1],[5,45,42,1,1],[5,46,42,1,1],[5,47,42,1,1],[5,47,42,1,1],[5,48,41,1,1],[5,49,40,1,1],[5,50,40,1,1],[5,51,39,1,1],[5,52,38,1,1],[5,53,37,1,1],[5,54,36,1,1],[5,55,35,1,1],[5,56,35,1,1],[5,57,34,1,1],[5,58,33,1,1],[5,58,33,1,1],[5,59,33,1,1],[5,60,33,1,1],[5,61,33,1,1],[5,62,33,1,1],[5,63,33,1,1],[5,64,34,1,1],[5,65,34,1,1],[5,66,34,1,1],[5,67,34,1,1],[5,68,34,1,1],[5,69,34,1,1],[5,70,34,1,1],[5,70,34,1,1],[5,71,35,1,1],[5,72,35,1,1],[5,73,36,1,1],[5,74,37,1,1],[5,75,37,1,1],[5,76,38,1,1],[5,77,38,1,1],[5,78,39,1,1],[5,79,40,1,1],[5,80,40,1,1],[5,81,41,1,1],[5,81,41,1,1],[5,82,40,1,1],[5,83,40,1,1],[5,84,39,1,1],[5,85,39,1,1],[5,86,38,1,1],[5,87,38,1,1],[5,88,37,1,1],[5,89,37,1,1],[5,90,36,1,1],[5,90,36,1,1],[5,91,35,1,1],[5,92,34,1,1],[5,92,33,1,1],[5,93,32,1,1],[5,94,31,1,1],[5,95,30,1,1],[5,95,29,1,1],[5,96,28,1,1],[5,97,27,1,1],[7,14,36,1,2],[5,13,31,2,2],[7,25,37,1,2],[5,24,32,2,2],[7,36,45,1,2],[5,35,40,2,2],[7,47,44,1,2],[5,46,39,2,2],[7,58,35,1,2],[5,57,30,2,2],[7,70,36,1,2],[5,69,31,2,2],[7,81,43,1,2],[5,80,38,2,2],[7,90,38,1,2],[5,89,33,2,2],[7,94,23,15,9],[6,94,22,15,8],[5,97,22,10,2],[6,105,26,11,4],[7,109,30,6,2],[5,107,26,7,1],[7,99,18,2,5],[6,98,17,3,5],[5,99,16,2,3],[7,105,18,2,5],[5,105,17,2,4],[0,103,25,2,2],[5,104,25,1,1],[3,113,30,5,1],[6,94,30,3,4],[7,95,32,6,2],[10,0,67,120,53],[11,0,68,120,6],[11,0,80,120,6],[11,0,92,120,6],[11,0,104,120,6],[11,0,116,120,4],[15,0,70,120,1],[13,0,79,120,1],[13,26,68,1,12],[13,92,68,1,12],[10,35,56,51,22],[15,36,57,1,20],[15,41,57,1,20],[15,46,57,1,20],[15,51,57,1,20],[15,56,57,1,20],[15,61,57,1,20],[15,66,57,1,20],[15,71,57,1,20],[15,76,57,1,20],[15,81,57,1,20],[15,35,58,51,1],[15,35,62,51,1],[15,35,66,51,1],[15,35,70,51,1],[15,35,74,51,1],[14,34,55,53,2],[14,34,55,2,24],[14,85,55,2,24],[13,33,78,55,1],[13,58,113,3,1]],"fr":[[0,0,0,120,120],[1,0,12,120,46],[2,0,39,120,19],[5,8,8,1,1],[5,31,5,1,1],[5,52,13,1,1],[5,73,6,1,1],[5,108,12,1,1],[3,4,19,18,2],[3,11,17,13,2],[2,35,12,18,2],[2,39,10,7,2],[3,101,24,19,2],[4,17,17,10,10],[4,15,19,14,6],[5,18,18,7,2],[8,0,40,10,16],[4,2,45,1,2],[4,6,45,1,2],[8,12,34,7,22],[4,14,39,1,2],[8,22,38,11,18],[4,24,43,1,2],[4,28,43,1,2],[8,36,32,8,24],[4,38,37,1,2],[4,42,37,1,2],[8,47,40,8,16],[4,49,45,1,2],[4,53,45,1,2],[8,58,35,9,21],[4,60,40,1,2],[4,64,40,1,2],[8,70,39,8,17],[4,72,44,1,2],[4,76,44,1,2],[8,82,33,7,23],[4,84,38,1,2],[8,92,40,9,16],[4,94,45,1,2],[4,98,45,1,2],[8,104,35,8,21],[4,106,40,1,2],[4,110,40,1,2],[8,114,39,6,17],[4,116,44,1,2],[9,0,55,120,12],[2,0,57,120,1],[2,4,60,10,1],[2,28,63,15,1],[2,66,60,17,1],[2,100,64,13,1],[7,87,7,1,1],[7,87,8,1,1],[7,87,9,1,1],[7,87,10,1,1],[7,87,11,1,1],[7,87,12,1,1],[7,87,13,1,1],[7,87,14,1,1],[7,87,15,1,1],[7,87,16,1,1],[5,86,11,3,4],[7,85,14,3,3],[7,85,15,3,3],[7,85,16,3,3],[7,85,17,3,3],[7,84,18,3,3],[7,84,19,3,3],[7,84,20,3,3],[7,84,21,3,3],[7,84,22,3,3],[7,84,23,3,3],[7,84,24,3,3],[7,83,25,3,3],[7,83,26,3,3],[7,83,27,3,3],[7,83,28,3,3],[7,87,14,3,3],[7,87,15,3,3],[7,87,16,3,3],[7,87,17,3,3],[7,88,18,3,3],[7,88,19,3,3],[7,88,20,3,3],[7,88,21,3,3],[7,88,22,3,3],[7,88,23,3,3],[7,88,24,3,3],[7,89,25,3,3],[7,89,26,3,3],[7,89,27,3,3],[7,89,28,3,3],[7,83,28,3,3],[7,83,29,3,3],[7,82,30,3,3],[7,82,31,3,3],[7,82,32,3,3],[7,82,33,3,3],[7,81,34,3,3],[7,81,35,3,3],[7,81,36,3,3],[7,81,37,3,3],[7,80,38,3,3],[7,80,39,3,3],[7,89,28,3,3],[7,89,29,3,3],[7,90,30,3,3],[7,90,31,3,3],[7,90,32,3,3],[7,90,33,3,3],[7,91,34,3,3],[7,91,35,3,3],[7,91,36,3,3],[7,91,37,3,3],[7,92,38,3,3],[7,92,39,3,3],[7,80,39,3,3],[7,80,40,3,3],[7,79,41,3,3],[7,79,42,3,3],[7,79,43,3,3],[7,78,44,3,3],[7,78,45,3,3],[7,78,46,3,3],[7,77,47,3,3],[7,77,48,3,3],[7,77,49,3,3],[7,76,50,3,3],[7,76,51,3,3],[7,92,39,3,3],[7,92,40,3,3],[7,93,41,3,3],[7,93,42,3,3],[7,93,43,3,3],[7,94,44,3,3],[7,94,45,3,3],[7,94,46,3,3],[7,95,47,3,3],[7,95,48,3,3],[7,95,49,3,3],[7,96,50,3,3],[7,96,51,3,3],[7,76,51,3,3],[7,75,52,3,3],[7,75,53,3,3],[7,74,54,3,3],[7,74,55,3,3],[7,73,56,3,3],[7,72,57,3,3],[7,72,58,3,3],[7,71,59,3,3],[7,70,60,3,3],[7,70,61,3,3],[7,69,62,3,3],[7,69,63,3,3],[7,68,64,3,3],[7,96,51,3,3],[7,97,52,3,3],[7,97,53,3,3],[7,98,54,3,3],[7,98,55,3,3],[7,99,56,3,3],[7,100,57,3,3],[7,100,58,3,3],[7,101,59,3,3],[7,102,60,3,3],[7,102,61,3,3],[7,103,62,3,3],[7,103,63,3,3],[7,104,64,3,3],[6,86,15,1,1],[6,86,16,1,1],[6,86,17,1,1],[6,86,18,1,1],[6,85,19,1,1],[6,85,20,1,1],[6,85,21,1,1],[6,85,22,1,1],[6,85,23,1,1],[6,85,24,1,1],[6,85,25,1,1],[6,84,26,1,1],[6,84,27,1,1],[6,84,28,1,1],[6,84,29,1,1],[5,88,15,1,1],[5,88,16,1,1],[5,88,17,1,1],[5,88,18,1,1],[5,89,19,1,1],[5,89,20,1,1],[5,89,21,1,1],[5,89,22,1,1],[5,89,23,1,1],[5,89,24,1,1],[5,89,25,1,1],[5,90,26,1,1],[5,90,27,1,1],[5,90,28,1,1],[5,90,29,1,1],[6,84,29,1,1],[6,84,30,1,1],[6,83,31,1,1],[6,83,32,1,1],[6,83,33,1,1],[6,83,34,1,1],[6,82,35,1,1],[6,82,36,1,1],[6,82,37,1,1],[6,82,38,1,1],[6,81,39,1,1],[6,81,40,1,1],[5,90,29,1,1],[5,90,30,1,1],[5,91,31,1,1],[5,91,32,1,1],[5,91,33,1,1],[5,91,34,1,1],[5,92,35,1,1],[5,92,36,1,1],[5,92,37,1,1],[5,92,38,1,1],[5,93,39,1,1],[5,93,40,1,1],[6,81,40,1,1],[6,81,41,1,1],[6,80,42,1,1],[6,80,43,1,1],[6,80,44,1,1],[6,79,45,1,1],[6,79,46,1,1],[6,79,47,1,1],[6,78,48,1,1],[6,78,49,1,1],[6,78,50,1,1],[6,77,51,1,1],[6,77,52,1,1],[5,93,40,1,1],[5,93,41,1,1],[5,94,42,1,1],[5,94,43,1,1],[5,94,44,1,1],[5,95,45,1,1],[5,95,46,1,1],[5,95,47,1,1],[5,96,48,1,1],[5,96,49,1,1],[5,96,50,1,1],[5,97,51,1,1],[5,97,52,1,1],[6,77,52,1,1],[6,76,53,1,1],[6,76,54,1,1],[6,75,55,1,1],[6,75,56,1,1],[6,74,57,1,1],[6,73,58,1,1],[6,73,59,1,1],[6,72,60,1,1],[6,71,61,1,1],[6,71,62,1,1],[6,70,63,1,1],[6,70,64,1,1],[6,69,65,1,1],[5,97,52,1,1],[5,98,53,1,1],[5,98,54,1,1],[5,99,55,1,1],[5,99,56,1,1],[5,100,57,1,1],[5,101,58,1,1],[5,101,59,1,1],[5,102,60,1,1],[5,103,61,1,1],[5,103,62,1,1],[5,104,63,1,1],[5,104,64,1,1],[5,105,65,1,1],[7,83,28,9,3],[6,83,28,9,1],[5,84,28,7,1],[7,79,40,17,3],[6,79,40,17,1],[5,80,40,15,1],[7,75,51,25,3],[6,75,51,25,1],[5,76,51,23,1],[7,68,64,39,3],[6,68,64,39,1],[5,69,64,37,1],[6,85,20,1,1],[6,86,21,1,1],[6,86,22,1,1],[6,87,23,1,1],[6,87,24,1,1],[6,88,25,1,1],[6,88,26,1,1],[6,89,27,1,1],[6,89,28,1,1],[6,89,20,1,1],[6,88,21,1,1],[6,88,22,1,1],[6,87,23,1,1],[6,87,24,1,1],[6,86,25,1,1],[6,86,26,1,1],[6,85,27,1,1],[6,85,28,1,1],[6,83,30,1,1],[6,84,31,1,1],[6,85,32,1,1],[6,86,33,1,1],[6,87,34,1,1],[6,88,35,1,1],[6,89,36,1,1],[6,90,37,1,1],[6,91,38,1,1],[6,91,30,1,1],[6,90,31,1,1],[6,89,32,1,1],[6,88,33,1,1],[6,87,34,1,1],[6,86,35,1,1],[6,85,36,1,1],[6,84,37,1,1],[6,83,38,1,1],[6,79,41,1,1],[6,80,42,1,1],[6,81,42,1,1],[6,82,43,1,1],[6,83,43,1,1],[6,84,44,1,1],[6,85,44,1,1],[6,86,45,1,1],[6,87,45,1,1],[6,88,46,1,1],[6,89,46,1,1],[6,90,47,1,1],[6,91,47,1,1],[6,92,48,1,1],[6,93,48,1,1],[6,94,49,1,1],[6,95,49,1,1],[6,95,41,1,1],[6,94,42,1,1],[6,93,42,1,1],[6,92,43,1,1],[6,91,43,1,1],[6,90,44,1,1],[6,89,44,1,1],[6,88,45,1,1],[6,87,45,1,1],[6,86,46,1,1],[6,85,46,1,1],[6,84,47,1,1],[6,83,47,1,1],[6,82,48,1,1],[6,81,48,1,1],[6,80,49,1,1],[6,79,49,1,1],[6,75,52,1,1],[6,76,52,1,1],[6,77,53,1,1],[6,78,53,1,1],[6,79,53,1,1],[6,80,54,1,1],[6,81,54,1,1],[6,82,54,1,1],[6,83,55,1,1],[6,84,55,1,1],[6,85,55,1,1],[6,86,56,1,1],[6,87,56,1,1],[6,88,56,1,1],[6,89,57,1,1],[6,90,57,1,1],[6,91,57,1,1],[6,92,58,1,1],[6,93,58,1,1],[6,94,58,1,1],[6,95,59,1,1],[6,96,59,1,1],[6,97,59,1,1],[6,98,60,1,1],[6,99,60,1,1],[6,99,52,1,1],[6,98,52,1,1],[6,97,53,1,1],[6,96,53,1,1],[6,95,53,1,1],[6,94,54,1,1],[6,93,54,1,1],[6,92,54,1,1],[6,91,55,1,1],[6,90,55,1,1],[6,89,55,1,1],[6,88,56,1,1],[6,87,56,1,1],[6,86,56,1,1],[6,85,57,1,1],[6,84,57,1,1],[6,83,57,1,1],[6,82,58,1,1],[6,81,58,1,1],[6,80,58,1,1],[6,79,59,1,1],[6,78,59,1,1],[6,77,59,1,1],[6,76,60,1,1],[6,75,60,1,1],[6,77,63,2,2],[6,78,62,2,2],[6,78,61,2,2],[6,79,60,2,2],[6,80,59,2,2],[6,80,58,2,2],[6,81,57,2,2],[6,81,57,2,2],[6,82,57,2,2],[6,83,57,2,2],[6,84,57,2,2],[6,85,57,2,2],[6,86,57,2,2],[6,87,57,2,2],[6,88,57,2,2],[6,89,57,2,2],[6,90,57,2,2],[6,91,57,2,2],[6,91,57,2,2],[6,92,58,2,2],[6,93,59,2,2],[6,94,60,2,2],[6,94,61,2,2],[6,95,62,2,2],[6,96,63,2,2],[7,82,57,11,1],[5,85,25,1,1],[5,93,45,1,1],[5,76,55,1,1],[10,0,67,120,53],[11,0,68,120,6],[11,0,80,120,6],[11,0,92,120,6],[11,0,104,120,6],[11,0,116,120,4],[15,0,70,120,1],[13,0,79,120,1],[13,26,68,1,12],[13,92,68,1,12],[10,35,56,51,22],[15,36,57,1,20],[15,41,57,1,20],[15,46,57,1,20],[15,51,57,1,20],[15,56,57,1,20],[15,61,57,1,20],[15,66,57,1,20],[15,71,57,1,20],[15,76,57,1,20],[15,81,57,1,20],[15,35,58,51,1],[15,35,62,51,1],[15,35,66,51,1],[15,35,70,51,1],[15,35,74,51,1],[14,34,55,53,2],[14,34,55,2,24],[14,85,55,2,24],[13,33,78,55,1],[13,58,113,3,1]]};
+function getBackground(team){
+ if(!Object.prototype.hasOwnProperty.call(BACKGROUND_RECTS,team))throw new RangeError('Unknown team');
+ return {width:120,height:120,palette565:BACKGROUND_PALETTE.map(rgb565),palette:BACKGROUND_PALETTE.map(c=>rgb565Hex(rgb565(c))),rects:BACKGROUND_RECTS[team]};
+}
+
+function getActionFrameCount(id){actionFor(id);return 12;}
+function durationsFor(id){return actionFor(id)==='save'?SAVE_DURATIONS_MS:SHOT_DURATIONS_MS;}
+function getCycleMs(id){return durationsFor(id).reduce((a,b)=>a+b,0);}
+function getFrameStartMs(id,frame){
+ const durations=durationsFor(id);
+ if(!Number.isInteger(frame)||frame<0||frame>=durations.length)throw new RangeError('Unknown action frame');
+ return durations.slice(0,frame).reduce((a,b)=>a+b,0);
+}
+function getAnimationState(id,elapsedMs){
+ if(!Number.isFinite(elapsedMs))throw new RangeError('Elapsed time must be finite');
+ const durations=durationsFor(id),cycleMs=getCycleMs(id);
+ const phaseMs=((Math.max(0,Math.floor(elapsedMs))%cycleMs)+cycleMs)%cycleMs;
+ let remain=phaseMs,frame=0;
+ while(frame<durations.length-1&&remain>=durations[frame]){remain-=durations[frame];frame++;}
+ return {frame,phaseMs,cycleMs,motion:actionFor(id),view:actionFor(id)==='save'?'front':'back'};
+}
+function bezierPixel(a,b,c,q){
+ const r=1024-q;
+ return Math.floor((a*r*r+2*b*r*q+c*q*q+524288)/1048576);
+}
+const SHOT_CONTACT_FRAME=6;
+const SHOT_CONTACT_MS=SHOT_DURATIONS_MS.slice(0,SHOT_CONTACT_FRAME).reduce((a,b)=>a+b,0);
+const SHOT_CYCLE_MS=SHOT_DURATIONS_MS.reduce((a,b)=>a+b,0);
+function getShotState(elapsedMs){
+ const state=getAnimationState('vn',elapsedMs),age=state.phaseMs-SHOT_CONTACT_MS;
+ const q=age<=0?0:Math.min(1024,Math.floor((age*1024+200)/400));
+ return {...state,contactMs:SHOT_CONTACT_MS,ball:{
+  x:bezierPixel(138,130,119,q),y:bezierPixel(213,160,126,q),
+  shadowX:bezierPixel(140,132,121,q),shadowY:bezierPixel(226,192,156,q),
+  size:8-Math.floor((2*q+512)/1024),visible:age<550}};
+}
+
+const KEEPER_GOAL_RECTS=[[10,66,104,110,54],[15,70,108,1,48],[15,80,108,1,48],[15,90,108,1,48],[15,100,108,1,48],[15,110,108,1,48],[15,120,108,1,48],[15,130,108,1,48],[15,140,108,1,48],[15,150,108,1,48],[15,160,108,1,48],[15,170,108,1,48],[15,68,108,106,1],[15,68,116,106,1],[15,68,124,106,1],[15,68,132,106,1],[15,68,140,106,1],[15,68,148,106,1],[14,66,104,110,4],[14,66,104,4,54],[14,172,104,4,54],[13,64,156,114,2]];
+
+const KEEPER_CONTACT_MS=610,KEEPER_CYCLE_MS=1570;
+function smoothKeeperQ(q){return Math.floor((q*q*(3072-2*q)+524288)/1048576);}
+function keeperRootAt(phase){
+ const q=Math.max(0,Math.min(1024,Math.floor(((phase-400)*1024+205)/410)));
+ let shift=Math.floor((12*smoothKeeperQ(q)+512)/1024);
+ const lift=Math.floor((32*q*(1024-q)+524288)/1048576);
+ if(phase>=990){
+  const r=Math.max(0,Math.min(1024,Math.floor(((phase-990)*1024+180)/360)));
+  shift=Math.floor((12*(1024-smoothKeeperQ(r))+512)/1024);
+ }
+ return {x:104+shift,y:109-lift,shift,lift};
+}
+const KEEPER_GLOVE_LOCAL=KEEPER_POSES.map(p=>{
+ const [x,y]=p.ra[2],cs=Math.cos(p.angle),sn=Math.sin(p.angle);
+ return [Math.round(31.5+cs*(x-31.5)-sn*(y+1-47.5)),Math.round(47.5+sn*(x-31.5)+cs*(y+1-47.5))];
+});
+function getKeeperState(elapsedMs){
+ const state=getAnimationState('van_lam',elapsedMs),phase=state.phaseMs,root=keeperRootAt(phase);
+ const palm=KEEPER_GLOVE_LOCAL[state.frame];
+ const goalRoot=keeperRootAt(KEEPER_CONTACT_MS),goalPalm=KEEPER_GLOVE_LOCAL[6];
+ const targetX=goalRoot.x+Math.floor(goalPalm[0]/2)-3,targetY=goalRoot.y+Math.floor(goalPalm[1]/2)-3;
+ let x,y,size;
+ if(phase<KEEPER_CONTACT_MS){
+  const q=Math.floor((phase*1024+305)/610);
+  x=bezierPixel(138,148,targetX,q);y=bezierPixel(213,164,targetY,q);
+  size=8-Math.floor((2*q+512)/1024);
+ }else{x=root.x+Math.floor(palm[0]/2)-3;y=root.y+Math.floor(palm[1]/2)-3;size=6;}
+ return {...state,originX:root.x,originY:root.y,lift:root.lift,
+  ball:{x,y,size,visible:phase<990},goalLineY:156};
+}
+function getKeeperGoal(){return KEEPER_GOAL_RECTS;}
+
+globalThis.PIXEL_PLAYERS=Object.freeze({
+ width:WIDTH,height:HEIGHT,frameCount:12,views:['front','side','back'],models:MODEL_DATA,poses:POSES,
+ frameNames:FRAME_NAMES,saveFrameNames:SAVE_FRAME_NAMES,frameDurationsMs:SHOT_DURATIONS_MS,saveFrameDurationsMs:SAVE_DURATIONS_MS,
+ paletteSymbols:PALETTE_SYMBOLS,playerIds:Object.keys(MODEL_DATA),getFrame,getPalette,getPackedFrame,getRGB565Palette,actionFor,getBackground,rgb565,getActionFrameCount,getFrameStartMs,getCycleMs,getAnimationState,getShotState,getKeeperState,getKeeperGoal
+});
+
+
+
+
+// ---- UI / preview scene. This section can be omitted in another game. ----
+const ui={view:document.getElementById('view'),motion:document.getElementById('motion'),
+ play:document.getElementById('play'),frame:document.getElementById('frame'),frameLabel:document.getElementById('frame-label'),
+ speed:document.getElementById('speed'),speedLabel:document.getElementById('speed-label'),inspect:document.getElementById('inspect'),
+ matrix:document.getElementById('matrix'),palette:document.getElementById('palette'),dataInfo:document.getElementById('data-info'),
+ playerVn:document.getElementById('player-vn'),playerFr:document.getElementById('player-fr')};
+const contexts={vn:document.getElementById('canvas-vn').getContext('2d'),fr:document.getElementById('canvas-fr').getContext('2d')};
+const reducedMotion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state={playing:false,frame:0,timeMs:0,lastTime:null,lastPaintTime:null,fps:7};
+const VIEW_LABELS={back:'Sau lưng',front:'Chính diện',side:'Bên hông'};
+function block(ctx,color,x,y,w,h){ctx.fillStyle=color;ctx.fillRect(x,y,w,h);}
+function resolvePose(id,view,timeMs,mode){
+ if(mode==='idle')return {view,frame:0,motion:'idle'};
+ return getAnimationState(id,timeMs);
+}
+function drawBall(ctx,x,y,size=8){
+ x=Math.round(x);y=Math.round(y);size=Math.max(4,Math.round(size));
+ const ink='#101c35',white='#fff6dd',patch='#253756';
+ block(ctx,ink,x,y,size,size);block(ctx,ink,x+1,y-1,size-2,size+2);block(ctx,ink,x-1,y+1,size+2,size-2);
+ block(ctx,white,x+1,y,size-2,size);block(ctx,white,x,y+1,size,size-2);
+ block(ctx,'#c6d6e7',x+1,y+size-1,size-2,1);
+ const p=size>=6?2:1,center=Math.floor((size-p)/2);
+ block(ctx,patch,x+center,y+center,p,p);
+ block(ctx,patch,x+Math.floor(size/2),y,1,1);
+ block(ctx,patch,x+1,y+size-2,1,1);
+ block(ctx,patch,x+size-1,y+Math.floor(size/2),1,1);
+}
+function renderScene(ctx,id,pose,timeMs){
+ if(!ctx)return;
+ ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
+ const model=MODEL_DATA[id],bg=getBackground(model.team);
+ for(const[c,x,y,w,h]of bg.rects)block(ctx,bg.palette[c],x*2,y*2,w*2,h*2);
+ const rows=getFrame(id,pose.view,pose.frame,pose.motion),colors=getPalette(id);
+ if(model.role==='keeper'){
+  for(const[c,x,y,w,h]of getKeeperGoal())block(ctx,bg.palette[c],x,y,w,h);
+  const scene=getKeeperState(pose.motion==='save'?timeMs:0),shadowWidth=18-Math.floor(scene.lift/2);
+  block(ctx,bg.palette[10],scene.originX+16-Math.floor(shadowWidth/2),156,shadowWidth,2);
+  // The goalkeeper is at the goal line: 64x96 source -> 32x48 on this camera.
+  for(let y=0;y<48;y++)for(let x=0;x<32;x++){
+   const symbol=rows[y*2][x*2];
+   if(symbol!=='.')block(ctx,colors[symbol],scene.originX+x,scene.originY+y,1,1);
+  }
+  if(pose.motion==='save'&&scene.ball.visible)drawBall(ctx,scene.ball.x,scene.ball.y,scene.ball.size);
+  return;
+ }
+ block(ctx,bg.palette[10],101,229,44,3);
+ // Ball ahead of the kicker is occluded by the body, not painted over the back.
+ if(pose.motion==='shot'||(pose.motion==='idle'&&pose.view==='back')){
+  const ball=getShotState(pose.motion==='shot'?timeMs:0).ball;
+  if(ball.visible){
+   const w=Math.max(3,ball.size-2);
+   if(ball.shadowY>158)block(ctx,bg.palette[10],ball.shadowX-Math.floor(w/2),ball.shadowY,w,2);
+   drawBall(ctx,ball.x,ball.y,ball.size);
+  }
+ }
+ rows.forEach((row,y)=>[...row].forEach((symbol,x)=>{if(symbol!=='.')block(ctx,colors[symbol],88+x,134+y,1,1);}));
+}
+function renderPalette(){
+ ui.palette.replaceChildren();
+ for(const[symbol,color]of Object.entries(getPalette(ui.inspect.value))){
+  const row=document.createElement('div');row.className='swatch';
+  const swatch=document.createElement('i');if(color)swatch.style.background=color;else swatch.className='transparent';
+  const label=document.createElement('span');label.textContent=symbol+' '+(color||'trong suốt');
+  row.append(swatch,label);ui.palette.append(row);
+ }
+}
+function render(){
+ const view=ui.view.value,mode=ui.motion.value,time=state.timeMs;
+ for(const team of ['vn','fr']){
+  const id=(team==='vn'?ui.playerVn:ui.playerFr).value,model=MODEL_DATA[id],pose=resolvePose(id,view,time,mode);
+  renderScene(contexts[team],id,pose,time);
+  document.getElementById('name-'+team).textContent=model.name;
+  document.getElementById('number-'+team).textContent=model.number;
+  document.getElementById('role-'+team).textContent=model.role==='keeper'?'Thủ môn · găng tay':'Cầu thủ sút';
+  const names=pose.motion==='save'?SAVE_FRAME_NAMES:FRAME_NAMES;
+  document.getElementById('pose-'+team).textContent=VIEW_LABELS[pose.view]+(mode==='idle'?'':' · '+names[pose.frame]);
+ }
+ const id=ui.inspect.value,inspection=resolvePose(id,view,time,mode),count=getActionFrameCount(id);
+ state.frame=inspection.frame;ui.frame.max=String(count-1);ui.frame.value=String(inspection.frame);
+ const names=inspection.motion==='save'?SAVE_FRAME_NAMES:FRAME_NAMES;
+ ui.frameLabel.textContent=mode==='idle'?'1 / 1 · Đứng yên':(inspection.frame+1)+' / '+count+' · '+names[inspection.frame];
+ ui.speedLabel.textContent=Math.round(state.fps/7*100)+'%';
+ ui.play.textContent=state.playing?'Tạm dừng':'Phát hoạt ảnh';ui.play.setAttribute('aria-pressed',String(state.playing));
+ ui.play.disabled=mode==='idle';ui.frame.disabled=mode==='idle';ui.speed.disabled=mode==='idle';
+ ui.matrix.textContent=getFrame(id,inspection.view,inspection.frame,inspection.motion).join('\n');
+ ui.dataInfo.textContent='96 hàng × 64 cột · '+VIEW_LABELS[inspection.view];
+}
+function resetTime(){state.lastTime=null;state.lastPaintTime=null;}
+function resetAction(){state.timeMs=0;state.frame=0;resetTime();}
+ui.view.addEventListener('change',()=>{ui.motion.value='idle';state.playing=false;resetAction();render();});
+ui.motion.addEventListener('change',()=>{state.playing=ui.motion.value!=='idle'&&!reducedMotion;resetAction();render();});
+ui.play.addEventListener('click',()=>{if(ui.motion.value==='idle')return;state.playing=!state.playing;resetTime();render();});
+ui.frame.addEventListener('input',()=>{
+ state.timeMs=getFrameStartMs(ui.inspect.value,Number(ui.frame.value));state.playing=false;resetTime();render();
+});
+ui.speed.addEventListener('input',()=>{state.fps=Number(ui.speed.value);resetTime();render();});
+ui.inspect.addEventListener('change',()=>{renderPalette();render();});
+for(const selector of [ui.playerVn,ui.playerFr])selector.addEventListener('change',()=>{
+ ui.inspect.value=selector.value;resetAction();renderPalette();render();
+});
+document.addEventListener('visibilitychange',()=>{resetTime();});
+function tick(now){
+ if(state.lastTime!==null&&!document.hidden&&state.playing&&ui.motion.value!=='idle'){
+  state.timeMs+=Math.min(now-state.lastTime,100)*state.fps/7;
+  // Time-based flight between authored poses; avoid tying ball speed to pose FPS.
+  if(state.lastPaintTime===null||now-state.lastPaintTime>=25){state.lastPaintTime=now;render();}
+ }
+ state.lastTime=now;requestAnimationFrame(tick);
+}
+renderPalette();render();requestAnimationFrame(tick);
+
+
+</script>
+</body>
+</html>
+
+

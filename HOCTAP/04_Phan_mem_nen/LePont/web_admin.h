@@ -1,0 +1,47 @@
+#pragma once
+// =============================================================================
+//  LE PONT · CẦU — page de modification des questions — http://192.168.4.1/admin
+//  Généré depuis web/admin.html : modifie le .html puis relance gen_web_h.py,
+//  ou édite directement ci-dessous (c'est du HTML/JS ordinaire).
+//  VI: Tạo từ web/admin.html: sửa tệp .html rồi chạy lại gen_web_h.py.
+// =============================================================================
+const char ADMIN_HTML[] PROGMEM = R"html(
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Le Pont — questions</title>
+<style>
+body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#f1f5f9;margin:0;padding:16px}
+textarea{width:100%;height:58vh;font:13px/1.4 ui-monospace,Consolas,monospace;background:#0b1220;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px;box-sizing:border-box}
+button{font-size:16px;padding:10px 16px;border:0;border-radius:8px;background:#f59e0b;color:#111;margin:8px 8px 8px 0;cursor:pointer}
+button.g{background:#334155;color:#fff}
+code{background:#1e293b;padding:2px 5px;border-radius:4px}
+#msg{color:#94a3b8;margin-left:8px}
+p{color:#cbd5e1;line-height:1.5}
+</style></head><body>
+<h2>Questions du jeu (JSON)</h2>
+<p>Modifie, ajoute, puis « Envoyer ». Les questions sont remplacées en mémoire jusqu'au prochain redémarrage de l'objet.
+Pour les garder définitivement, colle le JSON dans <code>questions.h</code> et téléverse.</p>
+<textarea id="q" spellcheck="false"></textarea><br>
+<button onclick="save()">Envoyer à l'objet</button><button class="g" onclick="load()">Recharger</button><span id="msg"></span>
+<p>Format d'une question : <code>{"cat":"Mots voyageurs","fr":"…","vi":"…","o":["A","B","C","D"],"r":0,"pfr":"révélation FR","pvi":"tiết lộ VI"}</code>
+— <code>r</code> est l'index de la bonne réponse (0 à 3). Une question sans 4 options est ignorée.</p>
+<script>
+function $(i){return document.getElementById(i)}
+function load(){
+ fetch('/api/questions').then(function(r){return r.text()}).then(function(t){
+  try{$('q').value=JSON.stringify(JSON.parse(t),null,1)}catch(e){$('q').value=t}
+  $('msg').textContent='Chargé';
+ }).catch(function(){$('msg').textContent='Objet injoignable'});
+}
+function save(){
+ var t=$('q').value;
+ try{var a=JSON.parse(t);if(!Array.isArray(a))throw new Error('il faut une liste [ ... ]')}catch(e){$('msg').textContent='JSON invalide : '+e.message;return}
+ $('msg').textContent='Envoi…';
+ fetch('/api/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:t})
+  .then(function(r){return r.text()}).then(function(t){$('msg').textContent=t})
+  .catch(function(){$('msg').textContent='Échec de l\'envoi'});
+}
+load();
+</script></body></html>
+
+)html";
