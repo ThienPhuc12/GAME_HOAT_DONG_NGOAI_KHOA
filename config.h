@@ -12,8 +12,8 @@ static constexpr int PIN_OLED_SCL = 22;
 
 static constexpr uint32_t COIN_TOSS_MS = 3500;
 static constexpr uint32_t COUNTDOWN_MS = 3000;
-static constexpr uint32_t TRIVIA_MS = 5000;
-static constexpr uint32_t CHAR_SELECT_MS = 3000;
+static constexpr uint32_t TRIVIA_MS = 8000;
+static constexpr uint32_t CHAR_SELECT_MS = 15000;
 static constexpr uint32_t AIM_MS = 8000;
 static constexpr uint32_t SHOT_ANIM_MS = 3500;
 static constexpr uint32_t BUILD_ANIM_MS = 3000;

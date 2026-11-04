@@ -456,7 +456,7 @@ class PenaltyTft {
     viCentered(right, 180, 156, TFT_WHITE);
     if (frame_->state == STATE_CHAR_SELECT_3S)
       viCentered(frame_->blockedLane >= 0 ? "KHÓA 1 GÓC - BẮT 50%" : "GIỮ 3 HƯỚNG SÚT", 120, 196, TFT_YELLOW);
-    else viCentered("5 GIÂY TRẢ LỜI", 120, 196, TFT_WHITE);
+    else viCentered("8 GIÂY TRẢ LỜI", 120, 196, TFT_WHITE);
   }
 
   static uint8_t frameAt(uint32_t elapsedMs, const uint16_t* durations) {

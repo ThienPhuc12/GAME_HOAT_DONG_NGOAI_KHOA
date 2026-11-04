@@ -13,11 +13,11 @@ base = {
 states = {
     "host": {"state": "LOBBY", "scoreFR": 0, "scoreVN": 0, "soloMode": True},
     "coin": {"state": "COIN_TOSS", "winnerTeam": 1, "remainingMs": 2200},
-    "trivia": {"state": "TRIVIA_5S", "remainingMs": 4100, "questionId": 4,
+    "trivia": {"state": "TRIVIA_5S", "remainingMs": 7100, "questionId": 4,
                "qVi": "Món ăn nổi tiếng của Việt Nam gồm bánh phở, nước dùng và thịt bò hoặc gà là món gì?",
                "qFr": "Quel plat vietnamien se compose de nouilles de riz, de bouillon et de bœuf ou de poulet ?",
                "options": ["Bún chả", "Bánh xèo", "Cơm tấm", "Phở"]},
-    "characters": {"state": "CHAR_SELECT_3S", "remainingMs": 2600},
+    "characters": {"state": "CHAR_SELECT_3S", "remainingMs": 14600},
     "aim": {"state": "AIM_AND_SHOOT", "remainingMs": 7000},
     "shot": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootDir": 2, "saveDir": 0, "goal": True},
     "build": {"state": "MONUMENT_BUILD", "remainingMs": 2500, "goal": True},

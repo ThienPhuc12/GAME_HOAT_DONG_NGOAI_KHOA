@@ -190,7 +190,7 @@ static void startTrivia(uint32_t now) {
   if (!trivia.begin(players.count(TEAM_FR), players.count(TEAM_VN), currentQuestion.correctIdx, now)) return;
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i)
     botAnswerDelay[i] = players.players()[i].used && players.players()[i].bot
-        ? static_cast<uint16_t>(random(350, 4400)) : 0;
+        ? static_cast<uint16_t>(random(350, TRIVIA_MS - 350)) : 0;
   setState(STATE_TRIVIA_5S, now);
 }
 
@@ -438,7 +438,8 @@ static void tickGame(uint32_t now) {
       }
       break;
     case STATE_CHAR_SELECT_3S:
-      if (elapsed(now) >= CHAR_SELECT_MS) {
+      if ((selectedChar[TEAM_FR] != 255 && selectedChar[TEAM_VN] != 255) ||
+          elapsed(now) >= CHAR_SELECT_MS) {
         for (uint8_t t = 0; t < 2; ++t)
           if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(0, 2));
         shootDir = saveDir = -1;

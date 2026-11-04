@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "config.h"
 
 #if defined(ARDUINO_ARCH_ESP32)
 #include <esp_system.h>
@@ -26,7 +27,7 @@ struct TriviaResult {
 // members stay in the denominator. One answer per slot, including spectators.
 class TriviaEvaluator {
  public:
-  static constexpr uint32_t DURATION_MS = 5000;
+  static constexpr uint32_t DURATION_MS = TRIVIA_MS;
   static constexpr uint8_t MAX_MEMBERS_PER_TEAM = 64;
   using LaneRng = uint8_t (*)();
 
@@ -62,7 +63,7 @@ class TriviaEvaluator {
     return true;
   }
 
-  // Finalizes once, after exactly five seconds. The shooting team wins ties.
+  // Finalizes once, after the configured trivia duration. The shooting team wins ties.
   bool finish(uint32_t now, Team shootingTeam) {
     if (!active_ || finished_ || static_cast<uint8_t>(shootingTeam) > 1 ||
         static_cast<uint32_t>(now - startMs_) < DURATION_MS)
