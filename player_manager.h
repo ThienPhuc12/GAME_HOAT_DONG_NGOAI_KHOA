@@ -4,7 +4,9 @@
 #include "config.h"
 #include "trivia_evaluator.h"
 
-enum PlayerRole : uint8_t { ROLE_MAIN_PLAYER = 0, ROLE_SPECTATOR = 1 };
+enum PlayerRole : uint8_t {
+  ROLE_MAIN_PLAYER = 0, ROLE_SPECTATOR = 1, ROLE_HOST_DISPLAY = 2
+};
 
 struct Player {
   char name[32] = {};
@@ -17,7 +19,6 @@ struct Player {
   bool used = false;
   bool connected = false;
   bool bot = false;
-  bool host = false;
 };
 
 class PlayerManager {
@@ -52,7 +53,8 @@ class PlayerManager {
         hasMainPlayer_[team] = false;
         break;
       }
-    if (count(team) >= TriviaEvaluator::MAX_MEMBERS_PER_TEAM) return nullptr;
+    if (count(team) >= TriviaEvaluator::MAX_MEMBERS_PER_TEAM ||
+        totalCount() >= MAX_CLIENTS - 1) return nullptr; // One Wi-Fi slot is reserved for Host.
     for (auto& player : players_) {
       if (!player.used) {
         player = Player{};
@@ -63,7 +65,6 @@ class PlayerManager {
         player.role = hasMainPlayer_[team] ? ROLE_SPECTATOR : ROLE_MAIN_PLAYER;
         player.teamSlot = botSlot >= 0 ? botSlot : count(team);
         player.used = player.connected = true;
-        player.host = !hasHost();
         if (player.role == ROLE_MAIN_PLAYER) hasMainPlayer_[team] = true;
         return &player;
       }
@@ -99,6 +100,8 @@ class PlayerManager {
     return n;
   }
 
+  uint8_t totalCount() const { return count(TEAM_FR) + count(TEAM_VN); }
+
   uint8_t connectedCount(Team team) const {
     uint8_t n = 0;
     for (const auto& player : players_)
@@ -112,13 +115,10 @@ class PlayerManager {
       if (player.used && !player.bot && player.team == team && player.role == ROLE_MAIN_PLAYER) return true;
     return false;
   }
-  bool hasHost() const {
-    for (const auto& player : players_) if (player.used && player.host) return true;
-    return false;
-  }
   bool addBot(const char* name, Team team, bool main) {
     if (!name || !name[0] || strlen(name) >= sizeof(Player::name) ||
-        static_cast<uint8_t>(team) > 1 || (main && hasMainPlayer_[team])) return false;
+        static_cast<uint8_t>(team) > 1 || (main && hasMainPlayer_[team]) ||
+        totalCount() >= MAX_CLIENTS - 1) return false;
     for (const auto& p : players_) if (p.used && strcmp(p.name, name) == 0) return false;
     for (auto& p : players_) if (!p.used) {
       p = Player{};

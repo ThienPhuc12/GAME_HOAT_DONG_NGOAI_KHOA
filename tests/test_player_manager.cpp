@@ -27,15 +27,15 @@ int main() {
   assert(players.findByClient(102)->prediction == -1);
   assert(!players.predict(103, TEAM_VN));
 
-  const char* extras[] = {"P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11", "P12"};
-  for (int i = 0; i < 9; ++i)
+  const char* extras[] = {"P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11"};
+  for (int i = 0; i < 8; ++i)
     assert(players.join(200 + i, extras[i], TEAM_VN));
-  assert(players.count(TEAM_FR) + players.count(TEAM_VN) == MAX_CLIENTS);
+  assert(players.totalCount() == MAX_CLIENTS - 1);
   assert(!players.join(300, "Overflow", TEAM_VN));
 
   PlayerManager solo;
   Player* owner = solo.join(1, "Lan", TEAM_VN, "abc123");
-  assert(owner && owner->host && owner->role == ROLE_MAIN_PLAYER);
+  assert(owner && owner->role == ROLE_MAIN_PLAYER);
   solo.disconnect(1);
   assert(solo.join(2, "Lan", TEAM_VN, "abc123") == owner);
   assert(!solo.join(3, "Lan", TEAM_VN, "different"));

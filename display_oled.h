@@ -55,6 +55,8 @@ class PenaltyOled {
       display_.drawStr(10, 63, progress);
     } else if (state == STATE_LOBBY) {
       display_.drawStr(30, 63, "CHO BAT DAU");
+    } else if (state == STATE_TUTORIAL_SLIDES) {
+      display_.drawStr(32, 63, "HUONG DAN");
     } else {
       display_.drawStr(4, 63, shootingTeam == 0 ? "PHAP SUT | VN BAT" : "VN SUT | PHAP BAT");
     }

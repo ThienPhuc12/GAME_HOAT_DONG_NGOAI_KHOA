@@ -13,15 +13,14 @@
 #include "player_manager.h"
 #include "web_player.h"
 #include "display_oled.h"
-#include "display_tft.h"
 
-static PenaltyTft tft;
 static PenaltyOled oled;
 
 enum CommandType : uint8_t {
-  CMD_CONNECT, CMD_DISCONNECT, CMD_JOIN, CMD_PREDICT, CMD_HOST_START, CMD_HOST_REPLAY,
-  CMD_ANSWER, CMD_SELECT_CHAR, CMD_SHOOT, CMD_SAVE, CMD_PING, CMD_HOST_BOTS,
-  CMD_HOST_RESET, CMD_TEST_BLOCK, CMD_TEST_GOAL, CMD_TEST_VICTORY
+  CMD_CONNECT, CMD_DISCONNECT, CMD_HELLO, CMD_JOIN, CMD_PREDICT,
+  CMD_HOST_START, CMD_TUTORIAL_NEXT, CMD_HOST_SETTINGS, CMD_HOST_REPLAY,
+  CMD_SELECT_ANS, CMD_SELECT_CHAR, CMD_SHOOT, CMD_SAVE, CMD_PING,
+  CMD_HOST_BOTS, CMD_HOST_RESET, CMD_TEST_BLOCK, CMD_TEST_GOAL, CMD_TEST_VICTORY
 };
 
 struct Command {
@@ -30,9 +29,9 @@ struct Command {
   uint32_t receivedAt;
   char name[32];
   char playerId[25];
-  char pin[16];
   int8_t value;
   int8_t team;
+  uint32_t durationMs;
 };
 
 static QueueHandle_t commandQueue;
@@ -42,8 +41,15 @@ static AsyncWebServer server(80);
 static AsyncWebSocket ws("/ws");
 static PlayerManager players;
 static TriviaEvaluator trivia;
+struct HostSession {
+  char token[25] = {};
+  uint32_t clientId = 0;
+};
+static HostSession host;
 static GameState state = STATE_LOBBY;
 static uint32_t stateStarted = 0;
+static uint32_t triviaDurationMs = TRIVIA_MS;
+static uint8_t tutorialSlide = 0;
 static Team shootingTeam = TEAM_FR;
 static uint8_t score[2] = {0, 0};
 static uint8_t selectedChar[2] = {255, 255};
@@ -58,17 +64,18 @@ static uint8_t questionOrder[QUESTION_COUNT];
 static uint8_t questionCursor = QUESTION_COUNT;
 static Question currentQuestion{};
 static uint8_t currentQuestionId = 0;
-static uint32_t lastTftFrame = 0, lastOledFrame = 0, lastWsCleanup = 0;
+static uint32_t lastOledFrame = 0, lastWsCleanup = 0;
 static uint32_t lastNetworkLog = 0;
 
 static const char* stateName(GameState s) {
   switch (s) {
     case STATE_LOBBY: return "LOBBY";
+    case STATE_TUTORIAL_SLIDES: return "TUTORIAL_SLIDES";
     case STATE_COIN_TOSS: return "COIN_TOSS";
     case STATE_COUNTDOWN: return "COUNTDOWN";
     case STATE_TRIVIA_5S: return "TRIVIA_5S";
     case STATE_CHAR_SELECT_3S: return "CHAR_SELECT_3S";
-    case STATE_AIM_AND_SHOOT: return "AIM_AND_SHOOT";
+    case STATE_AIM_7S: return "AIM_7S";
     case STATE_PENALTY_ANIM: return "PENALTY_ANIM";
     case STATE_MONUMENT_BUILD: return "MONUMENT_BUILD";
     default: return "VICTORY_CEREMONY";
@@ -77,11 +84,12 @@ static const char* stateName(GameState s) {
 
 static uint32_t stateDuration(GameState s) {
   switch (s) {
+    case STATE_TUTORIAL_SLIDES: return TUTORIAL_SLIDE_MS;
     case STATE_COIN_TOSS: return COIN_TOSS_MS;
     case STATE_COUNTDOWN: return COUNTDOWN_MS;
-    case STATE_TRIVIA_5S: return TRIVIA_MS;
+    case STATE_TRIVIA_5S: return triviaDurationMs;
     case STATE_CHAR_SELECT_3S: return CHAR_SELECT_MS;
-    case STATE_AIM_AND_SHOOT: return AIM_MS;
+    case STATE_AIM_7S: return AIM_MS;
     case STATE_PENALTY_ANIM: return SHOT_ANIM_MS;
     case STATE_MONUMENT_BUILD: return BUILD_ANIM_MS;
     default: return 0;
@@ -94,15 +102,16 @@ static uint32_t remaining(uint32_t now) {
   return elapsed(now) >= duration ? 0 : duration - elapsed(now);
 }
 
+static char jsonOut[3072];
 template <size_t N> static void sendJson(uint32_t clientId, StaticJsonDocument<N>& doc) {
-  char out[2048];
+  if (doc.overflowed()) { Serial.println("JSON document overflow"); return; }
   const size_t n = measureJson(doc);
-  if (n >= sizeof(out)) return;
-  serializeJson(doc, out, sizeof(out));
+  if (n >= sizeof(jsonOut)) return;
+  serializeJson(doc, jsonOut, sizeof(jsonOut));
   if (clientId) {
-    if (AsyncWebSocketClient* client = ws.client(clientId)) client->text(out, n);
+    if (AsyncWebSocketClient* client = ws.client(clientId)) client->text(jsonOut, n);
   } else {
-    ws.textAll(out, n);
+    ws.textAll(jsonOut, n);
   }
 }
 
@@ -128,7 +137,8 @@ static void appendVictoryLists(JsonDocument& doc) {
 }
 
 static void sendState(uint32_t clientId = 0) {
-  StaticJsonDocument<2048> doc;
+  static StaticJsonDocument<3072> doc;
+  doc.clear();
   doc["t"] = "state";
   doc["state"] = stateName(state);
   doc["scoreFR"] = score[TEAM_FR];
@@ -137,9 +147,25 @@ static void sendState(uint32_t clientId = 0) {
   doc["remainingMs"] = remaining(millis());
   doc["membersFR"] = players.count(TEAM_FR);
   doc["membersVN"] = players.count(TEAM_VN);
+  doc["mainFR"] = players.hasMain(TEAM_FR);
+  doc["mainVN"] = players.hasMain(TEAM_VN);
+  doc["triviaMs"] = triviaDurationMs;
   doc["soloMode"] = soloMode;
+  if (state == STATE_TUTORIAL_SLIDES) doc["tutorialSlide"] = tutorialSlide;
+  JsonArray roster = doc.createNestedArray("roster");
+  for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
+    const Player& p = players.players()[i];
+    if (!p.used) continue;
+    JsonObject member = roster.createNestedObject();
+    member["name"] = p.name;
+    member["team"] = static_cast<uint8_t>(p.team);
+    member["role"] = static_cast<uint8_t>(p.role);
+    member["bot"] = p.bot;
+  }
   if (state == STATE_COIN_TOSS) doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
   if (state == STATE_TRIVIA_5S) {
+    doc["answeredFR"] = trivia.answeredCount(TEAM_FR);
+    doc["answeredVN"] = trivia.answeredCount(TEAM_VN);
     doc["questionId"] = currentQuestionId;
     doc["qVi"] = currentQuestion.q_vi;
     doc["qFr"] = currentQuestion.q_fr;
@@ -187,10 +213,11 @@ static void startTrivia(uint32_t now) {
   if (questionCursor >= QUESTION_COUNT) shuffleQuestions();
   if (!loadQuestion(questionOrder[questionCursor++], currentQuestion)) return;
   currentQuestionId = currentQuestion.id;
-  if (!trivia.begin(players.count(TEAM_FR), players.count(TEAM_VN), currentQuestion.correctIdx, now)) return;
+  if (!trivia.begin(players.count(TEAM_FR), players.count(TEAM_VN),
+                    currentQuestion.correctIdx, now, triviaDurationMs)) return;
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i)
     botAnswerDelay[i] = players.players()[i].used && players.players()[i].bot
-        ? static_cast<uint16_t>(random(350, TRIVIA_MS - 350)) : 0;
+        ? static_cast<uint16_t>(random(350, triviaDurationMs - 350)) : 0;
   setState(STATE_TRIVIA_5S, now);
 }
 
@@ -208,7 +235,7 @@ static void sendJoined(const Player& player) {
   doc["role"] = static_cast<uint8_t>(player.role);
   doc["prediction"] = player.prediction;
   doc["playerId"] = player.playerId;
-  doc["host"] = player.host;
+  doc["host"] = false;
   sendJson(player.clientId, doc);
   if (player.role == ROLE_SPECTATOR && player.prediction < 0) {
     StaticJsonDocument<96> prediction;
@@ -218,9 +245,27 @@ static void sendJoined(const Player& player) {
   sendState(player.clientId);
 }
 
-static bool hostAuthorized(const Command& cmd) {
-  const Player* p = players.findByClient(cmd.clientId);
-  return (p && p->host) || strcmp(cmd.pin, HOST_PIN) == 0;
+static bool hostAuthorized(const Command& cmd) { return host.clientId == cmd.clientId; }
+
+static void sendIdentity(uint32_t clientId, bool owner) {
+  StaticJsonDocument<160> doc;
+  doc["t"] = "identity";
+  doc["role"] = owner ? "HOST" : "GUEST";
+  doc["host"] = owner;
+  if (owner) doc["playerId"] = host.token;
+  sendJson(clientId, doc);
+  sendState(clientId);
+}
+
+static void startCoin(uint32_t now) {
+  shootingTeam = static_cast<Team>(random(0, 2));
+  coinResultSent = false;
+  StaticJsonDocument<128> doc;
+  doc["t"] = "coin_toss";
+  doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
+  doc["durationMs"] = COIN_TOSS_MS;
+  sendJson(0, doc);
+  setState(STATE_COIN_TOSS, now);
 }
 
 static void resetMatch(uint32_t now) {
@@ -231,20 +276,21 @@ static void resetMatch(uint32_t now) {
   activeLanes = 3;
   goal = coinResultSent = false;
   questionCursor = QUESTION_COUNT;
+  tutorialSlide = 0;
   StaticJsonDocument<64> replay;
   replay["t"] = "replay";
   sendJson(0, replay);
   setState(STATE_LOBBY, now);
 }
 
-static bool activateSoloBots(Team humanTeam) {
+static bool activateSoloBots() {
   if (soloMode) return true;
-  const Team other = static_cast<Team>(1 - humanTeam);
-  const uint8_t required = (players.hasMain(other) ? 0 : 1) + 4;
-  if (players.count(TEAM_FR) + players.count(TEAM_VN) + required > MAX_CLIENTS) return false;
+  const uint8_t required = (!players.hasMain(TEAM_FR) ? 1 : 0) +
+                           (!players.hasMain(TEAM_VN) ? 1 : 0) + 4;
+  if (players.totalCount() + required > MAX_CLIENTS - 1) return false;
   bool ok = true;
-  if (!players.hasMain(other))
-    ok = players.addBot(other == TEAM_FR ? "BOT PHAP" : "BOT VIET NAM", other, true);
+  if (!players.hasMain(TEAM_FR)) ok = players.addBot("BOT PHAP", TEAM_FR, true);
+  if (ok && !players.hasMain(TEAM_VN)) ok = players.addBot("BOT VIET NAM", TEAM_VN, true);
   if (ok) ok = players.addBot("FAN PHAP 1", TEAM_FR, false);
   if (ok) ok = players.addBot("FAN PHAP 2", TEAM_FR, false);
   if (ok) ok = players.addBot("FAN VN 1", TEAM_VN, false);
@@ -256,7 +302,22 @@ static bool activateSoloBots(Team humanTeam) {
 
 static void processCommand(const Command& cmd, uint32_t now) {
   if (cmd.type == CMD_CONNECT) { sendState(cmd.clientId); return; }
-  if (cmd.type == CMD_DISCONNECT) { players.disconnect(cmd.clientId); return; }
+  if (cmd.type == CMD_DISCONNECT) {
+    if (host.clientId == cmd.clientId) host.clientId = 0;
+    players.disconnect(cmd.clientId);
+    return;
+  }
+  if (cmd.type == CMD_HELLO) {
+    if (!cmd.playerId[0]) { sendError(cmd.clientId, "Thiếu mã thiết bị / Identifiant absent"); return; }
+    if (players.findByClient(cmd.clientId)) {
+      sendIdentity(cmd.clientId, false); return;
+    }
+    if (!host.token[0]) strcpy(host.token, cmd.playerId);
+    const bool owner = strcmp(host.token, cmd.playerId) == 0;
+    if (owner) host.clientId = cmd.clientId;
+    sendIdentity(cmd.clientId, owner);
+    return;
+  }
   if (cmd.type == CMD_PING) {
     StaticJsonDocument<64> pong;
     pong["t"] = "pong";
@@ -264,8 +325,14 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_JOIN) {
+    if (!host.token[0]) {
+      sendError(cmd.clientId, "Đang xác định Máy Chủ / Attribution de l’hôte en cours"); return;
+    }
+    if (host.clientId == cmd.clientId) {
+      sendError(cmd.clientId, "Máy chủ không thể vào đội / L'hôte ne joue pas"); return;
+    }
     Player* p = players.join(cmd.clientId, cmd.name, static_cast<Team>(cmd.team), cmd.playerId);
-    if (!p) { sendError(cmd.clientId, "Tên/đội không hợp lệ hoặc phòng đã đầy"); return; }
+    if (!p) { sendError(cmd.clientId, "Tên/đội không hợp lệ hoặc phòng đầy / Nom, équipe invalides ou salle pleine"); return; }
     sendJoined(*p);
     sendState();
     return;
@@ -273,20 +340,28 @@ static void processCommand(const Command& cmd, uint32_t now) {
   if (cmd.type == CMD_HOST_RESET || cmd.type == CMD_HOST_REPLAY ||
       cmd.type == CMD_HOST_BOTS || cmd.type == CMD_TEST_BLOCK ||
       cmd.type == CMD_TEST_GOAL || cmd.type == CMD_TEST_VICTORY ||
-      cmd.type == CMD_HOST_START) {
-    if (!hostAuthorized(cmd)) { sendError(cmd.clientId, "Cần quyền Chủ phòng hoặc mã PIN đúng"); return; }
+      cmd.type == CMD_HOST_START || cmd.type == CMD_TUTORIAL_NEXT ||
+      cmd.type == CMD_HOST_SETTINGS) {
+    if (!hostAuthorized(cmd)) { sendError(cmd.clientId, "Chỉ Máy Chủ được điều khiển / Hôte uniquement"); return; }
   }
   if (cmd.type == CMD_HOST_RESET || cmd.type == CMD_HOST_REPLAY) {
     resetMatch(now);
     return;
   }
+  if (cmd.type == CMD_HOST_SETTINGS) {
+    if (state != STATE_LOBBY || cmd.durationMs < 3000 || cmd.durationMs > 30000) {
+      sendError(cmd.clientId, "Thời gian câu hỏi: 3–30 giây / Durée: 3–30 secondes"); return;
+    }
+    triviaDurationMs = cmd.durationMs;
+    sendState();
+    return;
+  }
   if (cmd.type == CMD_HOST_BOTS) {
-    if (state != STATE_LOBBY) { sendError(cmd.clientId, "Chỉ đổi chế độ Bot ở sảnh chờ"); return; }
+    if (state != STATE_LOBBY) { sendError(cmd.clientId, "Chỉ đổi Bot ở sảnh chờ / Bots modifiables dans le hall uniquement"); return; }
     if (cmd.value == 0) { players.removeBots(); soloMode = false; }
     else {
-      const Player* host = players.findByClient(cmd.clientId);
-      if (!host || !activateSoloBots(host->team)) {
-        sendError(cmd.clientId, "Cần vào đội trước hoặc phòng không đủ chỗ cho Bot"); return;
+      if (!activateSoloBots()) {
+        sendError(cmd.clientId, "Phòng không đủ chỗ cho Bot / Salle pleine pour les bots"); return;
       }
     }
     sendState();
@@ -299,7 +374,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     goal = false;
     for (uint8_t t = 0; t < 2; ++t)
       if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(2));
-    setState(STATE_AIM_AND_SHOOT, now);
+    setState(STATE_AIM_7S, now);
     return;
   }
   if (cmd.type == CMD_TEST_GOAL) {
@@ -311,8 +386,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_TEST_VICTORY) {
-    const Player* host = players.findByClient(cmd.clientId);
-    Team winner = host ? host->team : TEAM_VN;
+    Team winner = TEAM_VN;
     if (score[TEAM_FR] > score[TEAM_VN]) winner = TEAM_FR;
     if (score[TEAM_VN] > score[TEAM_FR]) winner = TEAM_VN;
     score[winner] = GOALS_TO_WIN;
@@ -322,25 +396,25 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_HOST_START) {
-    if (state != STATE_LOBBY) { sendError(cmd.clientId, "Trận đấu đã bắt đầu"); return; }
+    if (state != STATE_LOBBY) { sendError(cmd.clientId, "Trận đấu đã bắt đầu / Match déjà commencé"); return; }
     if (!players.hasMain(TEAM_FR) || !players.hasMain(TEAM_VN)) {
-      sendError(cmd.clientId, "Cần một người chơi chính mỗi đội"); return;
+      sendError(cmd.clientId, "Mỗi đội cần một người chơi chính / Un joueur principal par équipe"); return;
     }
-    shootingTeam = static_cast<Team>(random(0, 2));
-    coinResultSent = false;
-    StaticJsonDocument<128> doc;
-    doc["t"] = "coin_toss";
-    doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
-    doc["durationMs"] = COIN_TOSS_MS;
-    sendJson(0, doc);
-    setState(STATE_COIN_TOSS, now);
+    tutorialSlide = 0;
+    setState(STATE_TUTORIAL_SLIDES, now);
+    return;
+  }
+  if (cmd.type == CMD_TUTORIAL_NEXT) {
+    if (state != STATE_TUTORIAL_SLIDES) return;
+    if (++tutorialSlide >= TUTORIAL_SLIDE_COUNT) startCoin(now);
+    else setState(STATE_TUTORIAL_SLIDES, now);
     return;
   }
   Player* p = players.findByClient(cmd.clientId);
-  if (!p) { sendError(cmd.clientId, "Hãy vào đội trước"); return; }
+  if (!p) { sendError(cmd.clientId, "Hãy vào đội trước / Rejoignez une équipe d’abord"); return; }
   if (cmd.type == CMD_PREDICT) {
     if (!players.predict(cmd.clientId, static_cast<Team>(cmd.team))) {
-      sendError(cmd.clientId, "Chỉ khán giả được dự đoán"); return;
+      sendError(cmd.clientId, "Chỉ khán giả được dự đoán / Pronostics réservés aux spectateurs"); return;
     }
     StaticJsonDocument<96> doc;
     doc["t"] = "predict_ack";
@@ -348,34 +422,39 @@ static void processCommand(const Command& cmd, uint32_t now) {
     sendJson(cmd.clientId, doc);
     return;
   }
-  if (cmd.type == CMD_ANSWER) {
+  if (cmd.type == CMD_SELECT_ANS) {
     if (state != STATE_TRIVIA_5S ||
-        !trivia.recordAnswer(p->team, p->teamSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
-      sendError(cmd.clientId, "Đáp án không hợp lệ hoặc đã hết giờ"); return;
+        !trivia.recordChoice(p->team, p->teamSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
+      sendError(cmd.clientId, "Đáp án sai định dạng hoặc hết giờ / Réponse invalide ou temps écoulé"); return;
     }
-    StaticJsonDocument<80> doc;
-    doc["t"] = "answer_ack";
+    StaticJsonDocument<96> doc;
+    doc["t"] = "choice_ack";
+    doc["a"] = cmd.value;
     sendJson(cmd.clientId, doc);
+    StaticJsonDocument<96> progress;
+    progress["t"] = "trivia_progress";
+    progress["fr"] = trivia.answeredCount(TEAM_FR);
+    progress["vn"] = trivia.answeredCount(TEAM_VN);
+    sendJson(0, progress);
     return;
   }
-  if (p->role != ROLE_MAIN_PLAYER) { sendError(cmd.clientId, "Chỉ người chơi chính được điều khiển"); return; }
+  if (p->role != ROLE_MAIN_PLAYER) { sendError(cmd.clientId, "Chỉ người chơi chính được điều khiển / Joueur principal uniquement"); return; }
   if (cmd.type == CMD_SELECT_CHAR) {
     if (state != STATE_CHAR_SELECT_3S || elapsed(cmd.receivedAt) >= CHAR_SELECT_MS ||
-        cmd.value < 0 || cmd.value > 1 || selectedChar[p->team] != 255) {
-      sendError(cmd.clientId, "Lựa chọn nhân vật không hợp lệ"); return;
+        cmd.value < 0 || cmd.value > 1) {
+      sendError(cmd.clientId, "Lựa chọn nhân vật không hợp lệ / Personnage invalide"); return;
     }
     selectedChar[p->team] = static_cast<uint8_t>(cmd.value);
     return;
   }
   if (cmd.type == CMD_SHOOT || cmd.type == CMD_SAVE) {
     const bool isShooter = p->team == shootingTeam;
-    if (state != STATE_AIM_AND_SHOOT || elapsed(cmd.receivedAt) >= AIM_MS ||
+    if (state != STATE_AIM_7S || elapsed(cmd.receivedAt) >= AIM_MS ||
         (cmd.type == CMD_SHOOT) != isShooter || cmd.value < 0 || cmd.value > 2 ||
         cmd.value == blockedLane) {
-      sendError(cmd.clientId, "Hướng không hợp lệ"); return;
+      sendError(cmd.clientId, "Hướng không hợp lệ / Direction invalide"); return;
     }
     int8_t& choice = isShooter ? shootDir : saveDir;
-    if (choice >= 0) { sendError(cmd.clientId, "Đã chọn hướng"); return; }
     choice = cmd.value;
   }
 }
@@ -385,7 +464,7 @@ static void tickGame(uint32_t now) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && botAnswerDelay[i] && elapsed(now) >= botAnswerDelay[i]) {
-        trivia.recordAnswer(p.team, p.teamSlot, static_cast<uint8_t>(random(4)), now);
+        trivia.recordChoice(p.team, p.teamSlot, static_cast<uint8_t>(random(4)), now);
         botAnswerDelay[i] = 0;
       }
     }
@@ -397,7 +476,7 @@ static void tickGame(uint32_t now) {
         selectedChar[p.team] = static_cast<uint8_t>(random(2));
     }
   }
-  if (soloMode && state == STATE_AIM_AND_SHOOT && elapsed(now) >= 650) {
+  if (soloMode && state == STATE_AIM_7S && elapsed(now) >= 650) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (!p.used || !p.bot || p.role != ROLE_MAIN_PLAYER) continue;
@@ -407,6 +486,12 @@ static void tickGame(uint32_t now) {
   }
   switch (state) {
     case STATE_LOBBY: break;
+    case STATE_TUTORIAL_SLIDES:
+      if (elapsed(now) >= TUTORIAL_SLIDE_MS) {
+        if (++tutorialSlide >= TUTORIAL_SLIDE_COUNT) startCoin(now);
+        else setState(STATE_TUTORIAL_SLIDES, now);
+      }
+      break;
     case STATE_COIN_TOSS:
       if (elapsed(now) >= COIN_TOSS_MS && !coinResultSent) {
         StaticJsonDocument<96> doc;
@@ -415,13 +500,13 @@ static void tickGame(uint32_t now) {
         sendJson(0, doc);
         coinResultSent = true;
       }
-      if (elapsed(now) >= COIN_TOSS_MS + 450) setState(STATE_COUNTDOWN, now);
+      if (elapsed(now) >= COIN_TOSS_MS) setState(STATE_COUNTDOWN, now);
       break;
     case STATE_COUNTDOWN:
       if (elapsed(now) >= COUNTDOWN_MS) startTrivia(now);
       break;
     case STATE_TRIVIA_5S:
-      if (elapsed(now) >= TRIVIA_MS && trivia.finish(now, shootingTeam)) {
+      if (elapsed(now) >= triviaDurationMs && trivia.finish(now, shootingTeam)) {
         TriviaResult result = trivia.result();
         activeLanes = result.activeLanes;
         blockedLane = result.blockedLane;
@@ -438,8 +523,7 @@ static void tickGame(uint32_t now) {
       }
       break;
     case STATE_CHAR_SELECT_3S:
-      if ((selectedChar[TEAM_FR] != 255 && selectedChar[TEAM_VN] != 255) ||
-          elapsed(now) >= CHAR_SELECT_MS) {
+      if (elapsed(now) >= CHAR_SELECT_MS) {
         for (uint8_t t = 0; t < 2; ++t)
           if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(0, 2));
         shootDir = saveDir = -1;
@@ -448,11 +532,11 @@ static void tickGame(uint32_t now) {
         doc["fr"] = selectedChar[TEAM_FR];
         doc["vn"] = selectedChar[TEAM_VN];
         sendJson(0, doc);
-        setState(STATE_AIM_AND_SHOOT, now);
+        setState(STATE_AIM_7S, now);
       }
       break;
-    case STATE_AIM_AND_SHOOT:
-      if ((shootDir >= 0 && saveDir >= 0) || elapsed(now) >= AIM_MS) {
+    case STATE_AIM_7S:
+      if (elapsed(now) >= AIM_MS) {
         if (shootDir < 0) shootDir = randomActiveLane();
         if (saveDir < 0) saveDir = randomActiveLane();
         goal = shootDir != saveDir;
@@ -502,7 +586,13 @@ static void onWsEvent(AsyncWebSocket*, AsyncWebSocketClient* client,
     StaticJsonDocument<384> doc;
     if (deserializeJson(doc, data, len)) return;
     const char* t = doc["t"] | "";
-    if (!strcmp(t, "join")) {
+    if (!strcmp(t, "hello")) {
+      cmd.type = CMD_HELLO;
+      const char* deviceId = doc["deviceId"] | "";
+      if (!deviceId[0]) deviceId = doc["playerId"] | "";
+      if (strlen(deviceId) >= sizeof(cmd.playerId)) return;
+      strncpy(cmd.playerId, deviceId, sizeof(cmd.playerId) - 1);
+    } else if (!strcmp(t, "join")) {
       cmd.type = CMD_JOIN;
       const char* name = doc["name"] | "";
       const char* playerId = doc["playerId"] | "";
@@ -513,55 +603,31 @@ static void onWsEvent(AsyncWebSocket*, AsyncWebSocketClient* client,
       cmd.team = doc["team"] | -1;
     } else if (!strcmp(t, "predict")) { cmd.type = CMD_PREDICT; cmd.team = doc["team"] | -1; }
     else if (!strcmp(t, "ping")) cmd.type = CMD_PING;
-    else if (!strcmp(t, "host_start") || !strcmp(t, "host_replay") ||
+    else if (!strcmp(t, "host_start") || !strcmp(t, "tutorial_next") ||
+             !strcmp(t, "host_settings") || !strcmp(t, "host_replay") ||
              !strcmp(t, "host_reset") || !strcmp(t, "host_bots") ||
              !strcmp(t, "test_block") || !strcmp(t, "test_goal") ||
              !strcmp(t, "test_victory")) {
       if (!strcmp(t, "host_start")) cmd.type = CMD_HOST_START;
+      else if (!strcmp(t, "tutorial_next")) cmd.type = CMD_TUTORIAL_NEXT;
+      else if (!strcmp(t, "host_settings")) cmd.type = CMD_HOST_SETTINGS;
       else if (!strcmp(t, "host_replay")) cmd.type = CMD_HOST_REPLAY;
       else if (!strcmp(t, "host_reset")) cmd.type = CMD_HOST_RESET;
       else if (!strcmp(t, "host_bots")) cmd.type = CMD_HOST_BOTS;
       else if (!strcmp(t, "test_block")) cmd.type = CMD_TEST_BLOCK;
       else if (!strcmp(t, "test_goal")) cmd.type = CMD_TEST_GOAL;
       else cmd.type = CMD_TEST_VICTORY;
-      const char* pin = doc["pin"] | "";
-      strncpy(cmd.pin, pin, sizeof(cmd.pin) - 1);
       cmd.value = doc["enabled"] | 0;
       cmd.team = doc["team"] | -1;
-    } else if (!strcmp(t, "answer")) { cmd.type = CMD_ANSWER; cmd.value = doc["idx"] | -1; }
+      cmd.durationMs = doc["triviaMs"] | 0;
+    } else if (!strcmp(t, "select_ans")) { cmd.type = CMD_SELECT_ANS; cmd.value = doc["a"] | -1; }
+    else if (!strcmp(t, "answer")) { cmd.type = CMD_SELECT_ANS; cmd.value = doc["idx"] | -1; }
     else if (!strcmp(t, "select_char")) { cmd.type = CMD_SELECT_CHAR; cmd.value = doc["charId"] | -1; }
     else if (!strcmp(t, "shoot")) { cmd.type = CMD_SHOOT; cmd.value = doc["dir"] | -1; }
     else if (!strcmp(t, "save")) { cmd.type = CMD_SAVE; cmd.value = doc["dir"] | -1; }
     else return;
   } else return;
   if (xQueueSend(commandQueue, &cmd, 0) != pdTRUE) client->text("{\"t\":\"error\",\"message\":\"Máy chủ đang bận\"}");
-}
-
-static void drawTft(uint32_t now) {
-  TriviaResult result = trivia.result();
-  TftFrame frame;
-  frame.state = state;
-  frame.nowMs = now;
-  frame.elapsedMs = elapsed(now);
-  frame.shootingTeam = shootingTeam;
-  frame.scoreFR = score[TEAM_FR];
-  frame.scoreVN = score[TEAM_VN];
-  frame.membersFR = players.count(TEAM_FR);
-  frame.membersVN = players.count(TEAM_VN);
-  frame.answeredFR = trivia.answeredCount(TEAM_FR);
-  frame.answeredVN = trivia.answeredCount(TEAM_VN);
-  frame.pctFR = result.pctFR;
-  frame.pctVN = result.pctVN;
-  frame.questionId = currentQuestionId;
-  frame.question = &currentQuestion;
-  frame.roster = players.players();
-  frame.blockedLane = blockedLane;
-  frame.selectedFR = selectedChar[TEAM_FR];
-  frame.selectedVN = selectedChar[TEAM_VN];
-  frame.shootDir = shootDir;
-  frame.saveDir = saveDir;
-  frame.goal = goal;
-  tft.render(frame);
 }
 
 static void drawOled(uint32_t now) {
@@ -574,7 +640,6 @@ static void redirectPortal(AsyncWebServerRequest* request) {
 
 void setup() {
   Serial.begin(115200);
-  if (!tft.begin()) Serial.println("TFT strip allocation failed");
   oled.begin();
   drawOled(millis());
   commandQueue = xQueueCreate(32, sizeof(Command));
@@ -613,20 +678,11 @@ void setup() {
 void loop() {
   if (!backendReady) return;
   const uint32_t now = millis();
-  while (Serial.available()) {
-    const int key = Serial.read();
-    if (key == 'T') { tft.setDiagnostic(true); Serial.println("TFT DIRECT TEST ON"); }
-    if (key == 'G') { tft.setDiagnostic(false); Serial.println("TFT DIRECT TEST OFF"); }
-  }
   dnsServer.processNextRequest();
   Command cmd;
   for (uint8_t i = 0; i < 32 && xQueueReceive(commandQueue, &cmd, 0) == pdTRUE; ++i)
     processCommand(cmd, millis());
   tickGame(millis());
-  if (static_cast<uint32_t>(now - lastTftFrame) >= 40) {
-    drawTft(now);
-    lastTftFrame = now;
-  }
   if (static_cast<uint32_t>(now - lastOledFrame) >= 200) {
     drawOled(now);
     lastOledFrame = now;

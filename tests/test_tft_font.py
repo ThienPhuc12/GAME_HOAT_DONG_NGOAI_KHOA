@@ -8,6 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class TftFontTest(unittest.TestCase):
+    @unittest.skipUnless('"display_tft.h"' in (ROOT / "VIET_FRANCE_PENALTY.ino").read_text(encoding="utf-8"),
+                         "TFT renderer is no longer part of the firmware")
     def test_font_covers_question_and_scene_text(self):
         subprocess.run([sys.executable, str(ROOT / "gen_tft_font.py")], check=True)
         header = (ROOT / "tft_font_vi.h").read_text(encoding="utf-8")
