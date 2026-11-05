@@ -1,100 +1,93 @@
-"""Generate ESP32 flash-resident questions from the Vietnamese Markdown source.
+"""Generate flash-resident bilingual questions from File _cau_hoi_moi.md.
 
-The source supplies only the correct answer. EDITORIAL supplies the French
-translation and three reviewed distractors; add an entry when adding a question.
 Usage: python gen_questions_h.py [--source path.md] [--output questions.h]
 """
 
 import argparse
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-# id: (French question, options A-D). The source answer must match one option.
-EDITORIAL = {
-    1: ("Quelle est la capitale du Viêt Nam ?", ("Huế", "Hà Nội", "Đà Nẵng", "Hồ Chí Minh-Ville")),
-    2: ("Quelle est la fête traditionnelle la plus importante au Viêt Nam ?", ("Tết Trung Thu", "Giỗ Tổ Hùng Vương", "Tết Nguyên Đán", "Lễ Vu Lan")),
-    3: ("Quel est le vêtement traditionnel des femmes vietnamiennes ?", ("Áo dài", "Hanbok", "Kimono", "Sari")),
-    4: ("Quel plat vietnamien se compose de nouilles de riz, de bouillon et de bœuf ou de poulet ?", ("Bún chả", "Bánh xèo", "Cơm tấm", "Phở")),
-    5: ("Quel gâteau carré traditionnel est incontournable au Tết dans le nord du Viêt Nam ?", ("Bánh tét", "Bánh chưng", "Bánh mì", "Bánh cốm")),
-    6: ("Quelle est la monnaie du Viêt Nam ?", ("Baht", "Yuan", "Đồng (VND)", "Euro")),
-    7: ("Quelle est la capitale de la France ?", ("Lyon", "Marseille", "Bordeaux", "Paris")),
-    8: ("Quel célèbre monument en fer se trouve à Paris ?", ("Tháp Eiffel", "Khải Hoàn Môn", "Nhà thờ Đức Bà Paris", "Cung điện Versailles")),
-    9: ("Quel pain français long et croustillant est emblématique de la cuisine française ?", ("Croissant", "Baguette", "Brioche", "Pain de mie")),
-    10: ("Dans quel musée parisien la Joconde est-elle exposée ?", ("Bảo tàng Orsay", "Trung tâm Pompidou", "Bảo tàng Louvre", "Bảo tàng Rodin")),
-    11: ("À quelle date est célébrée la fête nationale française ?", ("Ngày 1 tháng 5", "Ngày 8 tháng 5", "Ngày 11 tháng 11", "Ngày 14 tháng 7")),
-    12: ("Quelle monnaie utilise-t-on en France ?", ("Euro", "Franc Thụy Sĩ", "Bảng Anh", "Đồng (VND)")),
-    13: ("En quelles années l'équipe de France a-t-elle remporté la Coupe du monde de football ?", ("1994 và 2018", "1998 và 2018", "1998 và 2022", "2006 và 2018")),
-    14: ("Quel joueur français a inscrit un triplé en finale de la Coupe du monde 2022 contre l'Argentine ?", ("Antoine Griezmann", "Olivier Giroud", "Kylian Mbappé", "Karim Benzema")),
-    15: ("Pour quelle équipe nationale Zinedine Zidane a-t-il joué ?", ("Ý", "Tây Ban Nha", "Algérie", "Pháp")),
-    16: ("En quelles années le Viêt Nam a-t-il remporté l'AFF Cup, aujourd'hui appelée ASEAN Cup ?", ("2008, 2018 và 2024", "2008, 2018 và 2022", "2010, 2018 và 2024", "2008, 2016 và 2024")),
-    17: ("Quel entraîneur sud-coréen a mené le Viêt Nam en finale du Championnat d'Asie des moins de 23 ans en 2018 ?", ("Shin Tae-yong", "Kim Sang-sik", "Park Hang-seo", "Philippe Troussier")),
-    18: ("Combien de joueurs une équipe de football aligne-t-elle sur le terrain lors d'un match officiel ?", ("9 cầu thủ", "11 cầu thủ", "10 cầu thủ", "12 cầu thủ")),
-    19: ("De quel pain français le bánh mì vietnamien est-il inspiré ?", ("Brioche", "Pain de mie", "Croissant", "Baguette (từ thời Pháp thuộc)")),
-    20: ("Quel sport est le plus populaire au Viêt Nam comme en France ?", ("Bóng đá", "Bóng rổ", "Quần vợt", "Bóng chuyền")),
-}
-
-ENTRY = re.compile(r"^\s*(\d+)\.\s+\*\*(.+?)\*\*\s*$", re.MULTILINE)
-ANSWER = re.compile(r"^\s*Đáp án:\s*(.+?)\s*$", re.MULTILINE)
+HEADER = re.compile(r"^\*\*Câu\s+(\d+)\s*:\s*(.+?)\*\*\s*$", re.MULTILINE)
+FRENCH = re.compile(r"^\*\(Question\s+(\d+)\s*:\s*(.+?)\)\*\s*$", re.MULTILINE)
+OPTION = re.compile(r"^([ABCD])\.\s+(.+?)(?:\s+\*\((.+?)\)\*)?\s*$", re.MULTILINE)
+ANSWER = re.compile(r"^\*\s+\*\*Đáp án\s*/\s*Réponse\s*:\*\*\s*([ABCD])(?:\s+\*\(.+?\)\*)?\s*$", re.MULTILINE)
 
 
-def parse_markdown(markdown):
-    matches = list(ENTRY.finditer(markdown))
+@dataclass(frozen=True)
+class QuestionRow:
+    id: int
+    q_vi: str
+    q_fr: str
+    options: tuple[tuple[str, str], ...]  # (French, Vietnamese)
+    correct_idx: int
+
+
+def parse_markdown(markdown: str) -> list[QuestionRow]:
+    matches = list(HEADER.finditer(markdown))
+    if not matches:
+        raise ValueError("Không tìm thấy câu hỏi")
     rows = []
     for pos, match in enumerate(matches):
         end = matches[pos + 1].start() if pos + 1 < len(matches) else len(markdown)
-        answer_match = ANSWER.search(markdown, match.end(), end)
-        if not answer_match:
-            raise ValueError(f"Câu {match[1]} thiếu dòng Đáp án")
-        rows.append((int(match[1]), match[2].strip(), answer_match[1].strip()))
-    if not rows:
-        raise ValueError("Không tìm thấy câu hỏi")
-    ids = [row[0] for row in rows]
-    if len(ids) != len(set(ids)) or any(not 1 <= id_ <= 255 for id_ in ids):
-        raise ValueError("ID câu hỏi phải duy nhất và nằm trong 1..255")
+        section = markdown[match.end():end]
+        number = int(match[1])
+        french = FRENCH.search(section)
+        if not french or int(french[1]) != number:
+            raise ValueError(f"Câu {number} thiếu bản dịch tiếng Pháp hoặc sai ID")
+        options = list(OPTION.finditer(section))
+        if len(options) != 4 or [opt[1] for opt in options] != list("ABCD"):
+            raise ValueError(f"Câu {number} phải có đủ đáp án A, B, C, D")
+        answer = ANSWER.search(section)
+        if not answer:
+            raise ValueError(f"Câu {number} thiếu dòng đáp án")
+        rows.append(QuestionRow(
+            number, match[2].strip(), french[2].strip(),
+            tuple((opt[3].strip() if opt[3] else opt[2].strip(), opt[2].strip())
+                  for opt in options),
+            ord(answer[1]) - ord("A"),
+        ))
+    if [row.id for row in rows] != list(range(1, len(rows) + 1)) or len(rows) > 255:
+        raise ValueError("ID câu hỏi phải liên tiếp từ 1 đến tối đa 255")
     return rows
 
 
-def cpp_string(value):
+def cpp_string(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
 
-def render(rows):
+def render(rows: list[QuestionRow]) -> str:
     lines = [
         "#pragma once", "#include <stdint.h>", "#include <stddef.h>", "#include <pgmspace.h>",
         "// Generated by gen_questions_h.py; UTF-8 strings and table live in flash.",
+        "// Each option is stored as French | Vietnamese for the phone UI.",
         "struct Question {", "  uint8_t id;", "  const char* q_vi;", "  const char* q_fr;",
         "  const char* optA;", "  const char* optB;", "  const char* optC;",
         "  const char* optD;", "  uint8_t correctIdx;", "};", "",
     ]
-    for id_, vi, answer in rows:
-        if id_ not in EDITORIAL:
-            raise ValueError(f"Câu {id_} cần biên tập bản dịch tiếng Pháp và 4 đáp án trong EDITORIAL")
-        fr, opts = EDITORIAL[id_]
-        if len(opts) != 4 or opts.count(answer) != 1:
-            raise ValueError(f"Câu {id_}: đáp án Markdown phải xuất hiện đúng một lần trong 4 lựa chọn")
-        for suffix, value in zip(("vi", "fr", "a", "b", "c", "d"), (vi, fr, *opts)):
-            lines.append(f"static const char q_{id_}_{suffix}[] PROGMEM = {cpp_string(value)};")
+    for row in rows:
+        values = (row.q_vi, row.q_fr, *(f"{fr} | {vi}" for fr, vi in row.options))
+        for suffix, value in zip(("vi", "fr", "a", "b", "c", "d"), values):
+            lines.append(f"static const char q_{row.id}_{suffix}[] PROGMEM = {cpp_string(value)};")
     lines.extend(["", "static const Question QUESTIONS[] PROGMEM = {"])
-    for id_, _, answer in rows:
-        _, opts = EDITORIAL[id_]
-        lines.append(f"  Question{{{id_}, q_{id_}_vi, q_{id_}_fr, q_{id_}_a, q_{id_}_b, q_{id_}_c, q_{id_}_d, {opts.index(answer)}}},")
+    for row in rows:
+        id_ = row.id
+        lines.append(f"  Question{{{id_}, q_{id_}_vi, q_{id_}_fr, q_{id_}_a, q_{id_}_b, q_{id_}_c, q_{id_}_d, {row.correct_idx}}},")
     lines.extend([
         "};", f"static constexpr size_t QUESTION_COUNT = {len(rows)};", "",
-        "// Copies only the 30-byte descriptor; pointed-to text remains in flash.",
         "inline bool loadQuestion(size_t index, Question& out) {",
         "  if (index >= QUESTION_COUNT) return false;",
         "  memcpy_P(&out, &QUESTIONS[index], sizeof(out));",
-        "  return true;",
-        "}", "",
+        "  return true;", "}", "",
     ])
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, default=ROOT / "cau-hoi-van-hoa-viet-phap.md")
+    parser.add_argument("--source", type=Path, default=ROOT / "File _cau_hoi_moi.md")
     parser.add_argument("--output", type=Path, default=ROOT / "questions.h")
     args = parser.parse_args()
     rows = parse_markdown(args.source.read_text(encoding="utf-8-sig"))

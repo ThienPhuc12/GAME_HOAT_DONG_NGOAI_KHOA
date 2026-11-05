@@ -78,8 +78,8 @@ static const char* stateName(GameState s) {
     case STATE_TUTORIAL_SLIDES: return "TUTORIAL_SLIDES";
     case STATE_COIN_TOSS: return "COIN_TOSS";
     case STATE_COUNTDOWN: return "COUNTDOWN";
-    case STATE_TRIVIA_8S: return "TRIVIA_8S";
-    case STATE_CHAR_SELECT_7S: return "CHAR_SELECT_7S";
+    case STATE_TRIVIA_10S: return "TRIVIA_10S";
+    case STATE_CHAR_SELECT_8S: return "CHAR_SELECT_8S";
     case STATE_AIM_STANDOFF: return "AIM_STANDOFF";
     case STATE_PENALTY_ANIM: return "PENALTY_ANIM";
     case STATE_MONUMENT_BUILD: return "MONUMENT_BUILD";
@@ -92,8 +92,8 @@ static uint32_t stateDuration(GameState s) {
     case STATE_TUTORIAL_SLIDES: return TUTORIAL_SLIDE_MS;
     case STATE_COIN_TOSS: return COIN_TOSS_MS;
     case STATE_COUNTDOWN: return COUNTDOWN_MS;
-    case STATE_TRIVIA_8S: return TRIVIA_MS;
-    case STATE_CHAR_SELECT_7S: return CHAR_SELECT_MS;
+    case STATE_TRIVIA_10S: return TRIVIA_MS;
+    case STATE_CHAR_SELECT_8S: return CHAR_SELECT_MS;
     case STATE_AIM_STANDOFF: return AIM_MS;
     case STATE_PENALTY_ANIM: return SHOT_ANIM_MS;
     case STATE_MONUMENT_BUILD: return BUILD_ANIM_MS;
@@ -133,12 +133,25 @@ static void appendVictoryLists(JsonDocument& doc) {
   JsonArray winners = doc.createNestedArray("winners");
   JsonArray runnersUp = doc.createNestedArray("runnersUp");
   JsonArray predictors = doc.createNestedArray("correctPredictors");
+  JsonArray topSpectators = doc.createNestedArray("topSpectators");
+  uint16_t bestSpectatorScore = 0;
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
     const Player& p = players.players()[i];
     if (!p.used) continue;
     (p.team == winner ? winners : runnersUp).add(p.name);
     if (p.role == ROLE_SPECTATOR && p.prediction == winner) predictors.add(p.name);
+    if (p.role == ROLE_SPECTATOR && !p.bot && p.correctAnswers > bestSpectatorScore)
+      bestSpectatorScore = p.correctAnswers;
   }
+  if (bestSpectatorScore)
+    for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
+      const Player& p = players.players()[i];
+      if (p.used && !p.bot && p.role == ROLE_SPECTATOR && p.correctAnswers == bestSpectatorScore) {
+        JsonObject member = topSpectators.createNestedObject();
+        member["name"] = p.name;
+        member["correct"] = p.correctAnswers;
+      }
+    }
 }
 
 static void sendState(uint32_t clientId = 0) {
@@ -168,7 +181,7 @@ static void sendState(uint32_t clientId = 0) {
     member["bot"] = p.bot;
   }
   if (state == STATE_COIN_TOSS) doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
-  if (state == STATE_TRIVIA_8S) {
+  if (state == STATE_TRIVIA_10S) {
     doc["answeredFR"] = trivia.answeredCount(TEAM_FR);
     doc["answeredVN"] = trivia.answeredCount(TEAM_VN);
     doc["questionId"] = currentQuestionId;
@@ -180,7 +193,7 @@ static void sendState(uint32_t clientId = 0) {
     opts.add(currentQuestion.optC);
     opts.add(currentQuestion.optD);
   }
-  if (state >= STATE_CHAR_SELECT_7S && state <= STATE_MONUMENT_BUILD) {
+  if (state >= STATE_CHAR_SELECT_8S && state <= STATE_MONUMENT_BUILD) {
     doc["activeLanes"] = activeLanes;
     doc["blockedLane"] = blockedLane;
     doc["pctFR"] = trivia.result().pctFR;
@@ -223,7 +236,7 @@ static void startTrivia(uint32_t now) {
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i)
     botAnswerDelay[i] = players.players()[i].used && players.players()[i].bot
         ? static_cast<uint16_t>(random(350, TRIVIA_MS - 350)) : 0;
-  setState(STATE_TRIVIA_8S, now);
+  setState(STATE_TRIVIA_10S, now);
 }
 
 static uint8_t randomActiveLane() {
@@ -376,7 +389,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_HOST_SETTINGS) {
-    sendError(cmd.clientId, "Quiz fixé à 8 secondes / Câu hỏi cố định 8 giây");
+    sendError(cmd.clientId, "Quiz fixé à 10 secondes / Câu hỏi cố định 10 giây");
     return;
   }
   if (cmd.type == CMD_HOST_BOTS) {
@@ -446,7 +459,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_SELECT_ANS) {
-    if (state != STATE_TRIVIA_8S ||
+    if (state != STATE_TRIVIA_10S ||
         !trivia.recordChoice(p->team, p->teamSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
       sendError(cmd.clientId, "Đáp án sai định dạng hoặc hết giờ / Réponse invalide ou temps écoulé"); return;
     }
@@ -463,7 +476,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
   }
   if (p->role != ROLE_MAIN_PLAYER) { sendError(cmd.clientId, "Chỉ người chơi chính được điều khiển / Joueur principal uniquement"); return; }
   if (cmd.type == CMD_SELECT_CHAR) {
-    if (state != STATE_CHAR_SELECT_7S || elapsed(cmd.receivedAt) >= CHAR_SELECT_MS ||
+    if (state != STATE_CHAR_SELECT_8S || elapsed(cmd.receivedAt) >= CHAR_SELECT_MS ||
         cmd.value < 0 || cmd.value > (p->team == shootingTeam ? 1 : 0)) {
       sendError(cmd.clientId, "Lựa chọn nhân vật không hợp lệ / Personnage invalide"); return;
     }
@@ -483,7 +496,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
 }
 
 static void tickGame(uint32_t now) {
-  if (soloMode && state == STATE_TRIVIA_8S) {
+  if (soloMode && state == STATE_TRIVIA_10S) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && botAnswerDelay[i] && elapsed(now) >= botAnswerDelay[i]) {
@@ -492,7 +505,7 @@ static void tickGame(uint32_t now) {
       }
     }
   }
-  if (soloMode && state == STATE_CHAR_SELECT_7S && elapsed(now) >= 650) {
+  if (soloMode && state == STATE_CHAR_SELECT_8S && elapsed(now) >= 650) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && p.role == ROLE_MAIN_PLAYER && selectedChar[p.team] == 255)
@@ -528,8 +541,9 @@ static void tickGame(uint32_t now) {
     case STATE_COUNTDOWN:
       if (elapsed(now) >= COUNTDOWN_MS) startTrivia(now);
       break;
-    case STATE_TRIVIA_8S:
+    case STATE_TRIVIA_10S:
       if (elapsed(now) >= TRIVIA_MS && trivia.finish(now, shootingTeam)) {
+        players.recordSpectatorAnswers(trivia);
         TriviaResult result = trivia.result();
         activeLanes = result.activeLanes;
         blockedLane = result.blockedLane;
@@ -542,10 +556,10 @@ static void tickGame(uint32_t now) {
         doc["blockedLane"] = blockedLane;
         doc["correctIdx"] = currentQuestion.correctIdx;
         sendJson(0, doc);
-        setState(STATE_CHAR_SELECT_7S, now);
+        setState(STATE_CHAR_SELECT_8S, now);
       }
       break;
-    case STATE_CHAR_SELECT_7S:
+    case STATE_CHAR_SELECT_8S:
       if (elapsed(now) >= CHAR_SELECT_MS) {
         for (uint8_t t = 0; t < 2; ++t)
           if (selectedChar[t] == 255) selectedChar[t] = t == shootingTeam ? static_cast<uint8_t>(random(2)) : 0;

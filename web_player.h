@@ -112,6 +112,9 @@ static const char WEB_PLAYER_HTML[] PROGMEM = R"VFPWEB(<!doctype html>
     .tutorial-title{font-size:clamp(15px,3.6vw,23px)!important;color:#e8f7ff;margin:2px 0 12px!important;font-weight:650}.tutorial-fr{font-size:clamp(24px,6vw,42px);font-weight:900;color:#ffdc75;margin:13px 0 3px}
     .tutorial-card{border-radius:16px;padding:12px 14px}.tutorial-card p{margin-top:4px}.tutorial-card .lang-fr{font-size:15px}.tutorial-card .lang-vi{font-size:12px}
     .tutorial-card{display:flex;align-items:center;gap:13px}.tutorial-card .icon{font-size:29px;flex:none}
+    .tutorial-step{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:50%;background:#ffdc75;color:#123b3a;font-weight:950;font-size:20px}
+    .tutorial-card .icon{font-size:23px}.tutorial-card .lang-fr{line-height:1.28}.tutorial-card .lang-vi{line-height:1.28}
+    .tutorial-footer{margin-top:auto;padding-top:12px}
     .actor-models{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
     .flag-art{aspect-ratio:3/2;height:auto!important;border:0;background:none;overflow:hidden}
     .flag-art.fr{background:linear-gradient(90deg,#002395 0 33.333%,#FFFFFF 33.333% 66.667%,#ED2939 66.667% 100%)}
@@ -290,20 +293,21 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     'Baguette (từ thời Pháp thuộc)':'Baguette (époque coloniale)','Bóng đá':'Football','Bóng rổ':'Basket-ball','Quần vợt':'Tennis','Bóng chuyền':'Volley-ball'
   };
   function optionFr(option){if(OPTION_FR[option])return OPTION_FR[option];return option.replaceAll(' và ',' et ').replace(/^Ngày (\d+) tháng (\d+)$/,(_,d,m)=>`le ${d} ${{'5':'mai','7':'juillet','11':'novembre'}[m]||m}`)}
+  function bilingualOption(option){const sep=option.indexOf(' | ');return sep<0?[optionFr(option),option]:[option.slice(0,sep),option.slice(sep+3)]}
   function showTrivia(s){
     if(app.me?.role===2){showHostTrivia(s);return}
-    const duration=s.triviaMs||8000,p=view('Câu hỏi văn hóa / Question culturelle',`${duration/1000} GIÂY / SECONDES`);
+    const duration=s.triviaMs||10000,p=view('Câu hỏi văn hóa / Question culturelle',`${duration/1000} GIÂY / SECONDES`);
     timer(p,'Thời gian trả lời / Temps de réponse',duration);if(s.qFr)p.append(el('p','question-fr',s.qFr));p.append(el('div','question',s.qVi||''));
     const answers=el('div','answers');const hint=selectionHint(p);hint.hidden=app.selectedAnswer===null;
     (s.options||[]).forEach((option,index)=>{const b=button('',`answer${app.selectedAnswer===index?' selected':''}`,()=>{
       if(app.me?.role===2||remain()<=0)return;
       if(send({t:'select_ans',a:index})){app.selectedAnswer=index;hint.hidden=false;answers.querySelectorAll('button').forEach(x=>{const active=Number(x.dataset.answer)===index;x.classList.toggle('selected',active);x.setAttribute('aria-pressed',String(active))})}
-    });b.dataset.answer=index;b.setAttribute('aria-pressed',String(app.selectedAnswer===index));b.append(el('b','',String.fromCharCode(65+index)),bilingual(el('span',''),optionFr(option),option));b.disabled=app.me?.role===2||remain()<=0;answers.append(b)});
+    });b.dataset.answer=index;b.setAttribute('aria-pressed',String(app.selectedAnswer===index));b.append(el('b','',String.fromCharCode(65+index)),bilingual(el('span',''),...bilingualOption(option)));b.disabled=app.me?.role===2||remain()<=0;answers.append(b)});
     p.insertBefore(answers,hint);
     if(app.me?.role===2)p.append(el('p','muted',`Pháp / France: ${(app.triviaProgress?.fr??s.answeredFR??0)}/${s.membersFR||0} · Việt Nam / Vietnam: ${(app.triviaProgress?.vn??s.answeredVN??0)}/${s.membersVN||0}`));
   }
   function showHostTrivia(s){
-    const duration=s.triviaMs||8000,p=view('CÂU HỎI VĂN HÓA / QUESTION CULTURELLE','ĐẤU TRÍ PHÁP–VIỆT / DUEL CULTUREL FRANCE–VIETNAM');
+    const duration=s.triviaMs||10000,p=view('CÂU HỎI VĂN HÓA / QUESTION CULTURELLE','ĐẤU TRÍ PHÁP–VIỆT / DUEL CULTUREL FRANCE–VIETNAM');
     timer(p,'Thời gian trả lời / Temps de réponse',duration);
     p.append(el('p','question-fr',s.qFr||''),el('div','question',s.qVi||''));
     const split=el('div','arena-trivia-teams');
@@ -318,7 +322,7 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   function actorOptions(s){const team=app.me?.team??0;const ownTeam=team===0?'fr':'vn';return CHARACTERS[ownTeam][team===s.shootingTeam?'shoot':'keep']}
   function showHostCharacters(s){
     const p=view('Chọn nhân vật / Choix des joueurs','CẦU THỦ VÀ THỦ MÔN / TIREUR ET GARDIEN');
-    resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',7000);
+    resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',8000);
     const actors=currentActors(s),grid=el('div','arena-choices');
     for(const [actor,team,fr,vi] of [[actors.shooter,s.shootingTeam,'TIREUR','Người sút'],[actors.keeper,1-s.shootingTeam,'GARDIEN','Thủ môn']]){
       const card=el('div','arena-choice');card.append(actorPortrait(actor),bilingual(el('strong',''),`${TEAM_FLAG[team]} ${fr}`,`${vi} · ${teamLabel(team)[1]}`));grid.append(card);
@@ -328,8 +332,8 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   function showCharacters(s){
     if(app.me?.role===2){showHostCharacters(s);return}
     const main=app.me?.role===0,shooter=app.me?.team===s.shootingTeam;
-    const p=view(main?(shooter?'Chọn cầu thủ / Choisissez votre joueur':'Chọn thủ môn / Choisissez votre gardien'):'Đang chọn nhân vật / Choix des joueurs','7 GIÂY / 7 SECONDES');
-    resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',7000);
+    const p=view(main?(shooter?'Chọn cầu thủ / Choisissez votre joueur':'Chọn thủ môn / Choisissez votre gardien'):'Đang chọn nhân vật / Choix des joueurs','8 GIÂY / 8 SECONDES');
+    resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',8000);
     if(!main){quickInfo(p,'⏳','Choix en cours','Đang chọn nhân vật');return}
     const cards=el('div','cards');actorOptions(s).forEach((actor,index)=>{
       const b=button('',`char-card${app.selectedChar===index?' selected':''}`,()=>{if(remain()<=0)return;if(send({t:'select_char',charId:index})){app.selectedChar=index;cards.querySelectorAll('button').forEach(x=>x.classList.toggle('selected',Number(x.dataset.char)===index))}});
@@ -367,7 +371,16 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   function showShot(s){const p=view('Sút phạt / Tir au but','SÚT PHẠT / ⚽ PENALTY');stage(p);pieceProgress(p,s);app.shot={...(app.shot||{}),shootDir:s.shootDir??app.shot?.shootDir,saveDir:s.saveDir??app.shot?.saveDir,goal:s.goal??app.shot?.goal,shootingTeam:s.shootingTeam};if(s.goal!==undefined)p.append(bilingual(el('div','buff'),s.goal?'BUUUUT !':'ARRÊT PARFAIT !',s.goal?'VÀOOO !':'Bắt gọn bóng !'))}
   function showBuild(s){const p=view(s.goal?'Ghép di sản / Patrimoine en construction':'Bắt gọn bóng / Arrêt parfait','DI SẢN / 🏗️ PATRIMOINE');stage(p);pieceProgress(p,s);app.shot={...(app.shot||{}),goal:s.goal,shootingTeam:s.shootingTeam}}
   function nameChips(parent,names){const box=el('div','names');(names||[]).forEach(name=>box.append(el('span','',name)));if(!box.children.length)box.append(el('span','', '—'));parent.append(box)}
-  function showVictory(s){const p=view('Cùng nâng cúp hữu nghị! / Coupe de l’amitié !','CHIẾN THẮNG / 🏆 VICTOIRE');stage(p);const winners=el('div','honors');const gold=el('div','honor gold');gold.append(bilingual(el('h3',''),`🏆 ÉQUIPE GAGNANTE · ${teamLabel(s.winnerTeam)[0]}`,`Đội chiến thắng · ${teamLabel(s.winnerTeam)[1]}`));nameChips(gold,s.winners);winners.append(gold);const silver=el('div','honor');silver.append(bilingual(el('h3',''),`🥈 DEUXIÈME PLACE · ${teamLabel(1-s.winnerTeam)[0]}`,`Đội về nhì · ${teamLabel(1-s.winnerTeam)[1]}`));nameChips(silver,s.runnersUp);winners.append(silver);const predictors=el('div','honor gold');predictors.append(bilingual(el('h3',''),'📣 BONS PRONOSTICS','Khán giả đoán đúng'));nameChips(predictors,s.correctPredictors);winners.append(predictors);p.append(winners);if(app.me?.host)p.append(button('CHƠI LẠI / REJOUER','secondary wide',openHost))}
+  function showVictory(s){
+    const p=view('Cùng nâng cúp hữu nghị! / Coupe de l’amitié !','CHIẾN THẮNG / 🏆 VICTOIRE');stage(p);
+    const winners=el('div','honors');
+    const gold=el('div','honor gold');gold.append(bilingual(el('h3',''),`🏆 ÉQUIPE GAGNANTE · ${teamLabel(s.winnerTeam)[0]}`,`Đội chiến thắng · ${teamLabel(s.winnerTeam)[1]}`));nameChips(gold,s.winners);winners.append(gold);
+    const silver=el('div','honor');silver.append(bilingual(el('h3',''),`🥈 DEUXIÈME PLACE · ${teamLabel(1-s.winnerTeam)[0]}`,`Đội về nhì · ${teamLabel(1-s.winnerTeam)[1]}`));nameChips(silver,s.runnersUp);winners.append(silver);
+    const predictors=el('div','honor gold');predictors.append(bilingual(el('h3',''),'📣 BONS PRONOSTICS','Khán giả đoán đúng'));nameChips(predictors,s.correctPredictors);winners.append(predictors);
+    const best=el('div','honor gold');best.append(bilingual(el('h3',''),'🏅 MEILLEURS SPECTATEURS','Khán giả trả lời đúng nhiều nhất'));
+    nameChips(best,(s.topSpectators||[]).map(x=>`${x.name} · ${x.correct}`));winners.append(best);
+    p.append(winners);if(app.me?.host)p.append(button('CHƠI LẠI / REJOUER','secondary wide',openHost));
+  }
   function showJoinAvailability(){
     const s=app.game||{};for(const team of [0,1]){const b=$('screen').querySelector(`[data-team="${team}"]`);if(!b)continue;
       const full=team===0?s.mainFR:s.mainVN;
@@ -393,11 +406,17 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   }
   const TUTORIALS=[
     {fr:'APERÇU DU JEU',vi:'Tổng quan trò chơi',symbols:['🇫🇷','🏆','🇻🇳'],cards:[
-      ['🗼','TOUR EIFFEL · 5/5','Tháp Eiffel · 5/5'],['🐉','PONT DU DRAGON · 5/5','Cầu Rồng · 5/5'],['⚽','5 BUTS = VICTOIRE','Ghi 5 bàn để thắng']]},
-    {fr:'RÔLE DU JOUEUR',vi:'Vai trò người chơi chính',symbols:['🧠','🏃','🥅'],cards:[
-      ['🧠','QUIZ · 8 S','Trả lời · 8 giây'],['🏃','CHOIX DU JOUEUR · 7 S','Chọn cầu thủ · 7 giây'],['🥅','TIR OU ARRÊT · 7 S','Sút hoặc bắt · 7 giây']]},
-    {fr:'RÔLE DU SPECTATEUR',vi:'Vai trò khán giả',symbols:['📣','🛡️','🥅'],cards:[
-      ['📣','QUIZ AVEC VOTRE ÉQUIPE','Cùng đội trả lời'],['🛡️','MEILLEUR % DU GARDIEN','Thủ môn đúng nhiều hơn'],['🥅','1 ANGLE BLOQUÉ · 50 %','Khóa 1 góc · bắt 50%']]}
+      ['🇫🇷','Équipe France (Tour Eiffel) contre Équipe Vietnam (Pont du Dragon).','Đội Pháp (Tháp Eiffel) đấu sút luân lưu với Đội Việt Nam (Cầu Rồng).'],
+      ['⚽','1 but marqué = +1/5 bloc du monument de votre pays.','Mỗi bàn thắng xây thêm 1/5 công trình biểu tượng của đội.'],
+      ['🏆','La première équipe à 5 buts (5/5) achève son monument et remporte la Coupe !','Đội đầu tiên ghi 5 bàn, hoàn thiện 5/5 công trình, sẽ vô địch!']]},
+    {fr:'GUIDE DU JOUEUR',vi:'Hướng dẫn người chơi chính',symbols:['🧠','🏃','🥅'],cards:[
+      ['🧠','Quiz culturel (10 s) : répondez avec votre équipe avant chaque tir.','Câu hỏi (10 giây): cùng đồng đội trả lời trước mỗi lượt sút.'],
+      ['🏃','Choix du joueur (8 s) : le tireur choisit l’attaquant, le défenseur choisit le gardien.','Chọn nhân vật (8 giây): bên sút chọn cầu thủ, bên thủ chọn thủ môn.'],
+      ['🥅','Duel de tir (7 s) : gauche, milieu ou droite. À 0, le tir part ; le bon côté permet l’arrêt !','Đấu trí (7 giây): chọn Trái, Giữa hoặc Phải. Đúng 0 giây mới sút; thủ môn đoán trùng sẽ ôm bóng!']]},
+    {fr:'GUIDE DU SPECTATEUR',vi:'Hướng dẫn khán giả',symbols:['📣','🛡️','🏅'],cards:[
+      ['📣','Soutien d’équipe (10 s) : répondez au quiz pour augmenter le % de bonnes réponses.','Hỗ trợ đội nhà (10 giây): cùng trả lời để nâng tỷ lệ đúng của đội.'],
+      ['🛡️','Avantage gardien : meilleur % de son équipe = 1 direction bloquée, 2 choix, 50 % de chance d’arrêt.','Đội thủ môn có % đúng cao hơn sẽ khóa 1 góc: còn 2 hướng, cơ hội bắt trúng 50%.'],
+      ['🏅','Classement individuel : les spectateurs ayant le plus de bonnes réponses seront honorés !','Khán giả trả lời đúng nhiều câu nhất sẽ được vinh danh cuối trận!']]}
   ];
   function showTutorial(s){
     const index=Math.max(0,Math.min(2,s.tutorialSlide||0)),slide=TUTORIALS[index];
@@ -406,13 +425,13 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     const dots=el('div','tutorial-dots');for(let i=0;i<3;i++)dots.append(el('i',i===index?'active':''));top.append(dots);p.append(top);
     p.append(bilingual(el('h1','tutorial-fr'),slide.fr,slide.vi));
     const visual=el('div','tutorial-visual');slide.symbols.forEach(symbol=>visual.append(el('span','tutorial-symbol',symbol)));p.append(visual);
-    const cards=el('div','tutorial-cards');slide.cards.forEach(([icon,fr,vi])=>{const card=el('div','tutorial-card');card.append(el('span','icon',icon),bilingual(el('div',''),fr,vi));cards.append(card)});p.append(cards);
-    const footer=el('div','tutorial-footer');timer(footer,'Tự chuyển sau 6 giây / Passage après 6 s',6000);
+    const cards=el('div','tutorial-cards');slide.cards.forEach(([icon,fr,vi],step)=>{const card=el('div','tutorial-card');card.append(el('span','tutorial-step',String(step+1)),el('span','icon',icon),bilingual(el('div',''),fr,vi));cards.append(card)});p.append(cards);
+    const footer=el('div','tutorial-footer');timer(footer,'Tự chuyển sau 10 giây / Passage après 10 s',10000);
     if(app.me?.role===2)footer.append(button('Tiếp tục / SUIVANT','primary wide',()=>hostCommand('tutorial_next')));
     p.append(footer);
   }
-  function render(){document.body.classList.toggle('host-display',app.me?.role===2);$('hostBar').hidden=app.me?.role!==2;document.body.classList.toggle('tutorial-active',app.game?.state==='TUTORIAL_SLIDES'&&!!app.me);document.body.classList.toggle('host-stage-active',app.me?.role===2&&['COIN_TOSS','AIM_STANDOFF','PENALTY_ANIM','MONUMENT_BUILD','VICTORY_CEREMONY'].includes(app.game?.state));updateScore();if(!app.identityReady){view("Đang kết nối / Connexion en cours","VIET–FRANCE PENALTY");return}if(!app.me){showJoin();showJoinAvailability();return}const hostDisplay=app.me.role===2;roleNotice();const s=app.game;if(!s){if(hostDisplay)showHostLobby({});else showLobby({scoreFR:0,scoreVN:0});return}app.phase=s.state;switch(s.state){case 'LOBBY':hostDisplay?showHostLobby(s):showLobby(s);break;case 'TUTORIAL_SLIDES':showTutorial(s);break;case 'COIN_TOSS':showCoin(s);break;case 'COUNTDOWN':showCountdown(s);break;case 'TRIVIA_8S':showTrivia(s);break;case 'CHAR_SELECT_7S':showCharacters(s);break;case 'AIM_STANDOFF':showAim(s);break;case 'PENALTY_ANIM':showShot(s);break;case 'MONUMENT_BUILD':showBuild(s);break;case 'VICTORY_CEREMONY':showVictory(s);break;default:showLobby(s)}}
-  function onState(s){const previous=app.game?.state,previousBeat=app.lastBeat;const changed=previous!==s.state||app.game?.questionId!==s.questionId||app.game?.tutorialSlide!==s.tutorialSlide;if(previous&&previous!=='LOBBY'&&s.state==='LOBBY'&&!app.me?.host){app.me=null;clearTeamSelection()}app.game=s;app.deadline=now()+(s.remainingMs||0);app.phaseStart=now();if(changed){syncAudioForState(previous,s,previousBeat);app.lastBeat=null;app.selectedDir=null;app.selectedChar=null;if(s.state==='TRIVIA_8S'){app.selectedAnswer=null;app.triviaResult=null;app.triviaProgress=null}if(s.state==='COIN_TOSS'){app.coinStopped=false;app.coinWinner=s.winnerTeam}}render();syncHostPanel()}
+  function render(){document.body.classList.toggle('host-display',app.me?.role===2);$('hostBar').hidden=app.me?.role!==2;document.body.classList.toggle('tutorial-active',app.game?.state==='TUTORIAL_SLIDES'&&!!app.me);document.body.classList.toggle('host-stage-active',app.me?.role===2&&['COIN_TOSS','AIM_STANDOFF','PENALTY_ANIM','MONUMENT_BUILD','VICTORY_CEREMONY'].includes(app.game?.state));updateScore();if(!app.identityReady){view("Đang kết nối / Connexion en cours","VIET–FRANCE PENALTY");return}if(!app.me){showJoin();showJoinAvailability();return}const hostDisplay=app.me.role===2;roleNotice();const s=app.game;if(!s){if(hostDisplay)showHostLobby({});else showLobby({scoreFR:0,scoreVN:0});return}app.phase=s.state;switch(s.state){case 'LOBBY':hostDisplay?showHostLobby(s):showLobby(s);break;case 'TUTORIAL_SLIDES':showTutorial(s);break;case 'COIN_TOSS':showCoin(s);break;case 'COUNTDOWN':showCountdown(s);break;case 'TRIVIA_10S':showTrivia(s);break;case 'CHAR_SELECT_8S':showCharacters(s);break;case 'AIM_STANDOFF':showAim(s);break;case 'PENALTY_ANIM':showShot(s);break;case 'MONUMENT_BUILD':showBuild(s);break;case 'VICTORY_CEREMONY':showVictory(s);break;default:showLobby(s)}}
+  function onState(s){const previous=app.game?.state,previousBeat=app.lastBeat;const changed=previous!==s.state||app.game?.questionId!==s.questionId||app.game?.tutorialSlide!==s.tutorialSlide;if(previous&&previous!=='LOBBY'&&s.state==='LOBBY'&&!app.me?.host){app.me=null;clearTeamSelection()}app.game=s;app.deadline=now()+(s.remainingMs||0);app.phaseStart=now();if(changed){syncAudioForState(previous,s,previousBeat);app.lastBeat=null;app.selectedDir=null;app.selectedChar=null;if(s.state==='TRIVIA_10S'){app.selectedAnswer=null;app.triviaResult=null;app.triviaProgress=null}if(s.state==='COIN_TOSS'){app.coinStopped=false;app.coinWinner=s.winnerTeam}}render();syncHostPanel()}
   function clearTeamSelection(){app.saved=null;app.chosenTeam=null;app.selectedAnswer=null;app.selectedChar=null;app.selectedDir=null;try{localStorage.removeItem('team');localStorage.removeItem('role');localStorage.removeItem('vfpIdentity')}catch{}}
   function onPacket(m){switch(m.t){
     case 'identity':
@@ -420,7 +439,7 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
       if(m.host){app.me={role:2,host:true,team:-1,name:'HOST'};app.deviceId=m.playerId||app.deviceId;try{localStorage.setItem('vfpDeviceId',app.deviceId)}catch{}}
       else{app.me=null;clearTeamSelection()}
       render();syncHostPanel();break;
-    case 'trivia_progress':app.triviaProgress=m;if(app.me?.role===2&&app.game?.state==='TRIVIA_8S')render();break;
+    case 'trivia_progress':app.triviaProgress=m;if(app.me?.role===2&&app.game?.state==='TRIVIA_10S')render();break;
     case 'choice_ack':break;
     case 'joined':app.me=m;app.chosenTeam=m.team;app.saved={name:m.name,team:m.team,playerId:m.playerId||app.deviceId,role:m.role};toast(m.role===0?`Bạn là người chơi chính / Joueur principal · ${TEAM_NAME[m.team]}`:`Bạn là khán giả / Spectateur · ${TEAM_NAME[m.team]}`);render();syncHostPanel();break;
     case 'state':onState(m);break;case 'predict_prompt':if(app.me&&app.me.role===1&&app.me.prediction<0)render();break;
@@ -428,7 +447,7 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     case 'coin_toss':app.coinWinner=m.winnerTeam;app.coinStopped=false;app.coinStart=now();break;
     case 'coin_result':app.coinWinner=m.winnerTeam;app.coinStopped=true;break;
     case 'answer_ack':break;
-    case 'trivia_result':app.triviaResult=m;toast(m.blockedLane>=0?'Đội bắt gôn khóa một hướng / Le gardien bloque un angle':'Đội sút giữ ba hướng / Le tireur garde trois directions');if(app.game?.state==='CHAR_SELECT_7S'||app.game?.state==='TRIVIA_8S')render();break;
+    case 'trivia_result':app.triviaResult=m;toast(m.blockedLane>=0?'Đội bắt gôn khóa một hướng / Le gardien bloque un angle':'Đội sút giữ ba hướng / Le tireur garde trois directions');if(app.game?.state==='CHAR_SELECT_8S'||app.game?.state==='TRIVIA_10S')render();break;
     case 'characters':app.characters={fr:m.fr,vn:m.vn};toast('Nhân vật ra sân / Personnages sélectionnés');break;
     case 'shot':app.shot=m;break;
     case 'replay':if(!app.me?.host){app.me=null;clearTeamSelection()}app.triviaResult=null;app.characters=null;app.shot=null;toast('Trận mới / Nouveau match');render();syncHostPanel();break;
@@ -798,8 +817,8 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
         if(beat!==app.lastBeat){app.lastBeat=beat;stadiumAudio.playSuspenseCountdownTick(beat)}
       }
       if(ms<=0){
-        if(app.game?.state==='TRIVIA_8S')$('screen').querySelectorAll('.answer').forEach(b=>b.disabled=true);
-        if(app.game?.state==='CHAR_SELECT_7S')$('screen').querySelectorAll('.char-card').forEach(b=>b.disabled=true);
+        if(app.game?.state==='TRIVIA_10S')$('screen').querySelectorAll('.answer').forEach(b=>b.disabled=true);
+        if(app.game?.state==='CHAR_SELECT_8S')$('screen').querySelectorAll('.char-card').forEach(b=>b.disabled=true);
         if(app.game?.state==='AIM_STANDOFF')$('screen').querySelectorAll('.lane').forEach(b=>b.disabled=true);
       }
     }

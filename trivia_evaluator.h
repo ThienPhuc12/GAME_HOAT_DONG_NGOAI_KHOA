@@ -92,6 +92,11 @@ class TriviaEvaluator {
 
   TriviaResult result() const { return result_; }
   bool finished() const { return finished_; }
+  bool choiceCorrect(Team team, uint8_t memberSlot) const {
+    const uint8_t t = static_cast<uint8_t>(team);
+    return finished_ && t < 2 && memberSlot < total_[t] &&
+           choices_[t][memberSlot] == correctIdx_;
+  }
   uint8_t correctCount(Team team) const { return correct_[static_cast<uint8_t>(team)]; }
   uint8_t answeredCount(Team team) const {
     return static_cast<uint8_t>(__builtin_popcountll(answered_[static_cast<uint8_t>(team)]));

@@ -16,6 +16,7 @@ struct Player {
   PlayerRole role = ROLE_SPECTATOR;
   uint8_t teamSlot = 0;
   int8_t prediction = -1;
+  uint16_t correctAnswers = 0;
   bool used = false;
   bool connected = false;
   bool bot = false;
@@ -185,6 +186,12 @@ class PlayerManager {
   const Player* players() const { return players_; }
   void clearPredictions() {
     for (auto& player : players_) if (player.used) player.prediction = -1;
+  }
+  void recordSpectatorAnswers(const TriviaEvaluator& quiz) {
+    if (!quiz.finished()) return;
+    for (auto& player : players_) if (player.used && !player.bot && player.role == ROLE_SPECTATOR &&
+                                      quiz.choiceCorrect(player.team, player.teamSlot))
+      ++player.correctAnswers;
   }
 
  private:

@@ -65,4 +65,17 @@ int main() {
   fresh.clearAll();
   assert(fresh.totalCount() == 0);
   assert(!fresh.hasMain(TEAM_FR) && !fresh.hasMain(TEAM_VN));
+
+  PlayerManager ranked;
+  assert(ranked.join(31, "Captain", TEAM_VN, "captain"));
+  Player* fan = ranked.join(32, "Fan", TEAM_VN, "fan");
+  assert(fan && fan->role == ROLE_SPECTATOR);
+  TriviaEvaluator quiz;
+  assert(quiz.begin(0, 2, 1, 0, 10000));
+  assert(quiz.recordChoice(TEAM_VN, fan->teamSlot, 1, 9999));
+  assert(quiz.finish(10000, TEAM_FR));
+  ranked.recordSpectatorAnswers(quiz);
+  assert(fan->correctAnswers == 1);
+  ranked.clearAll();
+  assert(ranked.totalCount() == 0);
 }
