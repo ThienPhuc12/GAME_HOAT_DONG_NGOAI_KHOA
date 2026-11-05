@@ -1,4 +1,4 @@
-"""Check the shared Canvas flight geometry for all three save directions."""
+"""Check the goal and catch paths with the embedded SVG animation engine."""
 
 import shutil
 import subprocess
@@ -16,7 +16,7 @@ class ShotAnimationTest(unittest.TestCase):
         script = r"""
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync('web/player.html','utf8');
-const start=html.indexOf('function shotGeometry('),end=html.indexOf('function drawPixelBall(',start);
+const start=html.indexOf('function shotGeometry('),end=html.indexOf('function actorUse(',start);
 assert(start>=0&&end>start);
 const scope={};vm.runInNewContext(html.slice(start,end)+';this.geometry=shotGeometry',scope);
 for(let lane=0;lane<3;lane++){
@@ -46,15 +46,16 @@ for(let lane=0;lane<3;lane++){
             self.skipTest("Node.js is not installed")
         script = r"""
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const html=fs.readFileSync('cau-thu-pixel-esp32.html','utf8');
-const source=html.split('<script>')[1].split('// ---- UI / preview scene.')[0];
-const scope={};scope.globalThis=scope;vm.runInNewContext(source,scope);
-for(const ms of [610,850,1200,1500]){
-  const state=scope.PIXEL_PLAYERS.getKeeperState(ms);
-  assert.equal(state.ball.held,true);
-  assert.equal(state.ball.visible,true);
-  assert.equal(state.ball.x,state.originX+13);
-  assert.equal(state.ball.y,state.originY+22);
+const html=fs.readFileSync('cau-thu-pixel-esp32-moi.html','utf8');
+const source=html.split('<script>')[1].split('const viewNames')[0];
+const scope={};vm.runInNewContext(source+';this.getState=getKeeperHugState',scope);
+for(const ms of [650,850,1200,1500]){
+  const state=scope.getState(ms);
+  assert.equal(state.caught,true);
+  assert.equal(state.ball.x,120);
+  assert(state.ball.x>state.leftHand[0]);
+  assert(state.ball.x<state.rightHand[0]);
+  assert(Math.abs(state.ball.y-state.leftHand[1])<=5);
 }
 """
         result = subprocess.run([node, "-e", script], cwd=ROOT,

@@ -100,8 +100,8 @@ class PenaltyTft {
         case STATE_LOBBY: drawLobbySplit(); break;
         case STATE_COIN_TOSS: drawCoinTossAnim(); break;
         case STATE_COUNTDOWN: drawCountdown(); break;
-        case STATE_TRIVIA_5S:
-        case STATE_CHAR_SELECT_3S: drawTriviaSplit(); break;
+        case STATE_TRIVIA_8S:
+        case STATE_CHAR_SELECT_7S: drawTriviaSplit(); break;
         case STATE_AIM_AND_SHOOT:
         case STATE_PENALTY_ANIM: drawPenaltyShootout(); break;
         case STATE_MONUMENT_BUILD: drawMonumentAssembly(); break;
@@ -436,7 +436,7 @@ class PenaltyTft {
     char title[28];
     snprintf(title, sizeof(title), "CÂU HỎI #%u", frame_->questionId);
     viCentered(title, 120, 8, TFT_YELLOW);
-    if (frame_->state == STATE_TRIVIA_5S) {
+    if (frame_->state == STATE_TRIVIA_8S) {
       int width = frame_->elapsedMs >= TRIVIA_MS ? 0 : 174 * (TRIVIA_MS - frame_->elapsedMs) / TRIVIA_MS;
       rect(33, 27, 174, 5, TFT_DARKGREY);
       rect(33, 27, width, 5, TFT_YELLOW);
@@ -445,7 +445,7 @@ class PenaltyTft {
     viCentered("PHÁP", 60, 128, TFT_WHITE);
     viCentered("VIỆT NAM", 180, 128, TFT_WHITE);
     char left[28], right[28];
-    if (frame_->state == STATE_CHAR_SELECT_3S) {
+    if (frame_->state == STATE_CHAR_SELECT_7S) {
       snprintf(left, sizeof(left), "%.0f%% ĐÚNG", frame_->pctFR);
       snprintf(right, sizeof(right), "%.0f%% ĐÚNG", frame_->pctVN);
     } else {
@@ -454,7 +454,7 @@ class PenaltyTft {
     }
     viCentered(left, 60, 156, TFT_WHITE);
     viCentered(right, 180, 156, TFT_WHITE);
-    if (frame_->state == STATE_CHAR_SELECT_3S)
+    if (frame_->state == STATE_CHAR_SELECT_7S)
       viCentered(frame_->blockedLane >= 0 ? "KHÓA 1 GÓC - BẮT 50%" : "GIỮ 3 HƯỚNG SÚT", 120, 196, TFT_YELLOW);
     else viCentered("8 GIÂY TRẢ LỜI", 120, 196, TFT_WHITE);
   }

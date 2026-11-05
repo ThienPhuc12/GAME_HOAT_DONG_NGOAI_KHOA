@@ -9,6 +9,34 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WebAudioTest(unittest.TestCase):
+    def test_background_music_respects_flash_size_and_ducks(self):
+        self.assertLess((ROOT / "data" / "wavin_flag.mp3").stat().st_size, 0xE0000 - 64 * 1024)
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("Node.js is not installed")
+        script = r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('web/player.html','utf8');
+const start=html.indexOf('class BackgroundMusicEngine{'),end=html.indexOf('const backgroundMusic=',start);
+assert(start>=0&&end>start);
+let plays=0,pauses=0;
+const audio={volume:0,paused:true,addEventListener(){},play(){plays++;this.paused=false;return Promise.resolve()},
+  pause(){pauses++;this.paused=true},load(){},currentTime:0,src:'/audio/wavin_flag.mp3'};
+const scope={$:id=>id==='bgm-wavin-flag'?audio:{textContent:''},app:{me:{host:true}},toast(){},
+  performance:{now:()=>0},setInterval:()=>1,clearInterval(){},URL:{createObjectURL:()=> 'blob:music',revokeObjectURL(){}}};
+vm.runInNewContext(html.slice(start,end)+';this.Engine=BackgroundMusicEngine',scope);
+const bgm=new scope.Engine();assert.equal(audio.volume,.18);
+bgm.startFromGesture();assert.equal(plays,1);assert.equal(bgm.wanted,true);
+bgm.syncState('TUTORIAL_SLIDES','PENALTY_ANIM');assert(Math.abs(bgm.targetVolume()-.18*.33)<1e-6);
+bgm.syncState('MONUMENT_BUILD','VICTORY_CEREMONY');assert.equal(bgm.targetVolume(),.35);
+bgm.setVolume(50);assert.equal(bgm.targetVolume(),.5);
+assert(bgm.useLocalFile({name:'Wavin Flag.mp3',type:'audio/mpeg'}));assert.equal(audio.src,'blob:music');
+bgm.syncState('VICTORY_CEREMONY','LOBBY');assert(pauses>0);assert.equal(bgm.wanted,false);
+"""
+        result = subprocess.run([node, "-e", script], cwd=ROOT,
+                                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_four_effects_schedule_and_stop_audio_nodes(self):
         node = shutil.which("node")
         if not node:
@@ -22,6 +50,7 @@ assert(start>=0&&end>start);
 const events=[],sources=[];
 class Param{
   constructor(){this.value=0}
+  cancelScheduledValues(t){events.push(['cancel',t]);return this}
   setValueAtTime(v,t){events.push(['set',v,t]);return this}
   linearRampToValueAtTime(v,t){events.push(['linear',v,t]);return this}
   exponentialRampToValueAtTime(v,t){events.push(['exponential',v,t]);return this}
@@ -54,6 +83,7 @@ vm.runInNewContext(html.slice(start,end)+';this.Engine=StadiumAudioEngine',scope
   assert(timer>0);assert(audio.sources.size>30);
   assert(events.some(e=>e[1]===600));assert(events.some(e=>e[1]===180));
   assert(events.some(e=>e[1]===2800));assert(events.some(e=>e[1]===3400));
+  assert(events.some(e=>e[1]===.80));assert(events.some(e=>e[1]===.85));
   const active=[...audio.sources];audio.stopAll();
   assert.equal(timer,0);assert.equal(audio.sources.size,0);
   assert(active.every(source=>source.stopped===true));

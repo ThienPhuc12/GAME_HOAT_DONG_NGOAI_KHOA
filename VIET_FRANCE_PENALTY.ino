@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <DNSServer.h>
+#include <SPIFFS.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
@@ -48,7 +49,6 @@ struct HostSession {
 static HostSession host;
 static GameState state = STATE_LOBBY;
 static uint32_t stateStarted = 0;
-static uint32_t triviaDurationMs = TRIVIA_MS;
 static uint8_t tutorialSlide = 0;
 static Team shootingTeam = TEAM_FR;
 static uint8_t score[2] = {0, 0};
@@ -73,9 +73,9 @@ static const char* stateName(GameState s) {
     case STATE_TUTORIAL_SLIDES: return "TUTORIAL_SLIDES";
     case STATE_COIN_TOSS: return "COIN_TOSS";
     case STATE_COUNTDOWN: return "COUNTDOWN";
-    case STATE_TRIVIA_5S: return "TRIVIA_5S";
-    case STATE_CHAR_SELECT_3S: return "CHAR_SELECT_3S";
-    case STATE_AIM_7S: return "AIM_7S";
+    case STATE_TRIVIA_8S: return "TRIVIA_8S";
+    case STATE_CHAR_SELECT_7S: return "CHAR_SELECT_7S";
+    case STATE_AIM_STANDOFF: return "AIM_STANDOFF";
     case STATE_PENALTY_ANIM: return "PENALTY_ANIM";
     case STATE_MONUMENT_BUILD: return "MONUMENT_BUILD";
     default: return "VICTORY_CEREMONY";
@@ -87,9 +87,9 @@ static uint32_t stateDuration(GameState s) {
     case STATE_TUTORIAL_SLIDES: return TUTORIAL_SLIDE_MS;
     case STATE_COIN_TOSS: return COIN_TOSS_MS;
     case STATE_COUNTDOWN: return COUNTDOWN_MS;
-    case STATE_TRIVIA_5S: return triviaDurationMs;
-    case STATE_CHAR_SELECT_3S: return CHAR_SELECT_MS;
-    case STATE_AIM_7S: return AIM_MS;
+    case STATE_TRIVIA_8S: return TRIVIA_MS;
+    case STATE_CHAR_SELECT_7S: return CHAR_SELECT_MS;
+    case STATE_AIM_STANDOFF: return AIM_MS;
     case STATE_PENALTY_ANIM: return SHOT_ANIM_MS;
     case STATE_MONUMENT_BUILD: return BUILD_ANIM_MS;
     default: return 0;
@@ -149,7 +149,7 @@ static void sendState(uint32_t clientId = 0) {
   doc["membersVN"] = players.count(TEAM_VN);
   doc["mainFR"] = players.hasMain(TEAM_FR);
   doc["mainVN"] = players.hasMain(TEAM_VN);
-  doc["triviaMs"] = triviaDurationMs;
+  doc["triviaMs"] = TRIVIA_MS;
   doc["soloMode"] = soloMode;
   if (state == STATE_TUTORIAL_SLIDES) doc["tutorialSlide"] = tutorialSlide;
   JsonArray roster = doc.createNestedArray("roster");
@@ -163,7 +163,7 @@ static void sendState(uint32_t clientId = 0) {
     member["bot"] = p.bot;
   }
   if (state == STATE_COIN_TOSS) doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
-  if (state == STATE_TRIVIA_5S) {
+  if (state == STATE_TRIVIA_8S) {
     doc["answeredFR"] = trivia.answeredCount(TEAM_FR);
     doc["answeredVN"] = trivia.answeredCount(TEAM_VN);
     doc["questionId"] = currentQuestionId;
@@ -175,7 +175,7 @@ static void sendState(uint32_t clientId = 0) {
     opts.add(currentQuestion.optC);
     opts.add(currentQuestion.optD);
   }
-  if (state >= STATE_CHAR_SELECT_3S && state <= STATE_MONUMENT_BUILD) {
+  if (state >= STATE_CHAR_SELECT_7S && state <= STATE_MONUMENT_BUILD) {
     doc["activeLanes"] = activeLanes;
     doc["blockedLane"] = blockedLane;
     doc["pctFR"] = trivia.result().pctFR;
@@ -214,11 +214,11 @@ static void startTrivia(uint32_t now) {
   if (!loadQuestion(questionOrder[questionCursor++], currentQuestion)) return;
   currentQuestionId = currentQuestion.id;
   if (!trivia.begin(players.count(TEAM_FR), players.count(TEAM_VN),
-                    currentQuestion.correctIdx, now, triviaDurationMs)) return;
+                    currentQuestion.correctIdx, now, TRIVIA_MS)) return;
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i)
     botAnswerDelay[i] = players.players()[i].used && players.players()[i].bot
-        ? static_cast<uint16_t>(random(350, triviaDurationMs - 350)) : 0;
-  setState(STATE_TRIVIA_5S, now);
+        ? static_cast<uint16_t>(random(350, TRIVIA_MS - 350)) : 0;
+  setState(STATE_TRIVIA_8S, now);
 }
 
 static uint8_t randomActiveLane() {
@@ -349,11 +349,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_HOST_SETTINGS) {
-    if (state != STATE_LOBBY || cmd.durationMs < 3000 || cmd.durationMs > 30000) {
-      sendError(cmd.clientId, "Thời gian câu hỏi: 3–30 giây / Durée: 3–30 secondes"); return;
-    }
-    triviaDurationMs = cmd.durationMs;
-    sendState();
+    sendError(cmd.clientId, "Quiz fixé à 8 secondes / Câu hỏi cố định 8 giây");
     return;
   }
   if (cmd.type == CMD_HOST_BOTS) {
@@ -374,7 +370,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     goal = false;
     for (uint8_t t = 0; t < 2; ++t)
       if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(2));
-    setState(STATE_AIM_7S, now);
+    setState(STATE_AIM_STANDOFF, now);
     return;
   }
   if (cmd.type == CMD_TEST_GOAL) {
@@ -423,7 +419,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_SELECT_ANS) {
-    if (state != STATE_TRIVIA_5S ||
+    if (state != STATE_TRIVIA_8S ||
         !trivia.recordChoice(p->team, p->teamSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
       sendError(cmd.clientId, "Đáp án sai định dạng hoặc hết giờ / Réponse invalide ou temps écoulé"); return;
     }
@@ -440,8 +436,8 @@ static void processCommand(const Command& cmd, uint32_t now) {
   }
   if (p->role != ROLE_MAIN_PLAYER) { sendError(cmd.clientId, "Chỉ người chơi chính được điều khiển / Joueur principal uniquement"); return; }
   if (cmd.type == CMD_SELECT_CHAR) {
-    if (state != STATE_CHAR_SELECT_3S || elapsed(cmd.receivedAt) >= CHAR_SELECT_MS ||
-        cmd.value < 0 || cmd.value > 1) {
+    if (state != STATE_CHAR_SELECT_7S || elapsed(cmd.receivedAt) >= CHAR_SELECT_MS ||
+        cmd.value < 0 || cmd.value > (p->team == shootingTeam ? 1 : 0)) {
       sendError(cmd.clientId, "Lựa chọn nhân vật không hợp lệ / Personnage invalide"); return;
     }
     selectedChar[p->team] = static_cast<uint8_t>(cmd.value);
@@ -449,7 +445,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
   }
   if (cmd.type == CMD_SHOOT || cmd.type == CMD_SAVE) {
     const bool isShooter = p->team == shootingTeam;
-    if (state != STATE_AIM_7S || elapsed(cmd.receivedAt) >= AIM_MS ||
+    if (state != STATE_AIM_STANDOFF || elapsed(cmd.receivedAt) >= AIM_MS ||
         (cmd.type == CMD_SHOOT) != isShooter || cmd.value < 0 || cmd.value > 2 ||
         cmd.value == blockedLane) {
       sendError(cmd.clientId, "Hướng không hợp lệ / Direction invalide"); return;
@@ -460,7 +456,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
 }
 
 static void tickGame(uint32_t now) {
-  if (soloMode && state == STATE_TRIVIA_5S) {
+  if (soloMode && state == STATE_TRIVIA_8S) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && botAnswerDelay[i] && elapsed(now) >= botAnswerDelay[i]) {
@@ -469,14 +465,14 @@ static void tickGame(uint32_t now) {
       }
     }
   }
-  if (soloMode && state == STATE_CHAR_SELECT_3S && elapsed(now) >= 650) {
+  if (soloMode && state == STATE_CHAR_SELECT_7S && elapsed(now) >= 650) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && p.role == ROLE_MAIN_PLAYER && selectedChar[p.team] == 255)
-        selectedChar[p.team] = static_cast<uint8_t>(random(2));
+        selectedChar[p.team] = p.team == shootingTeam ? static_cast<uint8_t>(random(2)) : 0;
     }
   }
-  if (soloMode && state == STATE_AIM_7S && elapsed(now) >= 650) {
+  if (soloMode && state == STATE_AIM_STANDOFF && elapsed(now) >= 650) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (!p.used || !p.bot || p.role != ROLE_MAIN_PLAYER) continue;
@@ -505,8 +501,8 @@ static void tickGame(uint32_t now) {
     case STATE_COUNTDOWN:
       if (elapsed(now) >= COUNTDOWN_MS) startTrivia(now);
       break;
-    case STATE_TRIVIA_5S:
-      if (elapsed(now) >= triviaDurationMs && trivia.finish(now, shootingTeam)) {
+    case STATE_TRIVIA_8S:
+      if (elapsed(now) >= TRIVIA_MS && trivia.finish(now, shootingTeam)) {
         TriviaResult result = trivia.result();
         activeLanes = result.activeLanes;
         blockedLane = result.blockedLane;
@@ -519,23 +515,23 @@ static void tickGame(uint32_t now) {
         doc["blockedLane"] = blockedLane;
         doc["correctIdx"] = currentQuestion.correctIdx;
         sendJson(0, doc);
-        setState(STATE_CHAR_SELECT_3S, now);
+        setState(STATE_CHAR_SELECT_7S, now);
       }
       break;
-    case STATE_CHAR_SELECT_3S:
+    case STATE_CHAR_SELECT_7S:
       if (elapsed(now) >= CHAR_SELECT_MS) {
         for (uint8_t t = 0; t < 2; ++t)
-          if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(0, 2));
+          if (selectedChar[t] == 255) selectedChar[t] = t == shootingTeam ? static_cast<uint8_t>(random(2)) : 0;
         shootDir = saveDir = -1;
         StaticJsonDocument<96> doc;
         doc["t"] = "characters";
         doc["fr"] = selectedChar[TEAM_FR];
         doc["vn"] = selectedChar[TEAM_VN];
         sendJson(0, doc);
-        setState(STATE_AIM_7S, now);
+        setState(STATE_AIM_STANDOFF, now);
       }
       break;
-    case STATE_AIM_7S:
+    case STATE_AIM_STANDOFF:
       if (elapsed(now) >= AIM_MS) {
         if (shootDir < 0) shootDir = randomActiveLane();
         if (saveDir < 0) saveDir = randomActiveLane();
@@ -552,8 +548,13 @@ static void tickGame(uint32_t now) {
       break;
     case STATE_PENALTY_ANIM:
       if (elapsed(now) >= SHOT_ANIM_MS) {
-        if (goal) ++score[shootingTeam];
-        setState(STATE_MONUMENT_BUILD, now);
+        if (goal) {
+          ++score[shootingTeam];
+          setState(STATE_MONUMENT_BUILD, now);
+        } else {
+          shootingTeam = static_cast<Team>(1 - shootingTeam);
+          startTrivia(now);
+        }
       }
       break;
     case STATE_MONUMENT_BUILD:
@@ -652,6 +653,15 @@ void setup() {
     return;
   }
   dnsServer.start(53, "*", IPAddress(192,168,4,1));
+  const bool audioFsReady = SPIFFS.begin(false);
+  Serial.printf("SPIFFS audio: %s\n", audioFsReady && SPIFFS.exists("/wavin_flag.mp3") ? "ready" : "missing (host can choose local MP3)");
+  server.on("/audio/wavin_flag.mp3", HTTP_GET, [audioFsReady](AsyncWebServerRequest* r) {
+    if (!audioFsReady || !SPIFFS.exists("/wavin_flag.mp3")) {
+      r->send(404, "text/plain; charset=utf-8", "Audio unavailable");
+      return;
+    }
+    r->send(SPIFFS, "/wavin_flag.mp3", "audio/mpeg");
+  });
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* r) {
     Serial.printf("HTTP / heap=%u\n", ESP.getFreeHeap());
     r->send(200, "text/html; charset=utf-8",
