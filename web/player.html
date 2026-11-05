@@ -138,6 +138,78 @@
     .arena-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.arena-choice{border-radius:16px;padding:12px;background:#ffffff14;text-align:center}.arena-choice svg{display:block;height:130px;width:100%;margin:auto}
     .tutorial-fr .lang-fr{font-size:clamp(24px,6vw,42px);color:#ffdc75}.tutorial-fr .lang-vi{font-size:clamp(15px,3.8vw,23px);color:#e8f7ff}
     .compact-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:15px;background:#ffffff13;margin:9px 0}.compact-row .icon{font-size:25px;flex:none}.compact-row .lang-fr{font-size:14px}.compact-row .lang-vi{font-size:12px}
+    .scene-intro,.scene-actions{min-width:0}.scene-intro>*:first-child{margin-top:0}.scene-actions>*:first-child{margin-top:0}
+    .desktop-roster{display:none;min-width:0}.desktop-roster .arena-roster{height:100%}.desktop-roster .member{overflow-wrap:anywhere}
+    .stage{width:min(100%,960px);max-height:38dvh;margin-inline:auto;image-rendering:pixelated}.stage canvas{image-rendering:pixelated}
+    @media(min-width:1024px){
+      body.host-display .app{width:min(100%,1560px);display:grid;grid-template-columns:minmax(165px,1fr) minmax(0,960px) minmax(165px,1fr);grid-template-areas:"toolbar toolbar toolbar" ". score ." ". rails ." "fr arena vn";column-gap:clamp(10px,1.5vw,24px);align-items:start}
+      body.host-display #hostBar{grid-area:toolbar;justify-self:end;width:min(100%,960px)}
+      body.host-display .scoreboard{grid-area:score}body.host-display .progress-rails{grid-area:rails}
+      body.host-display #screen{grid-area:arena;min-width:0;min-height:0;margin-top:8px}
+      body.host-display .desktop-roster{display:block;position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow:auto}
+      body.host-display .desktop-roster.fr{grid-area:fr}body.host-display .desktop-roster.vn{grid-area:vn}
+      body.host-display .host-bar{flex-wrap:nowrap}body.host-display .host-bar .host-brand{width:auto;flex:1;white-space:nowrap}body.host-display .host-bar button{flex:0 1 auto}
+      body.host-display #screen{min-height:0}body.host-display .arena-lobby-content{display:block}body.host-display .arena-lobby-content .stage{width:min(100%,calc(42dvh * 1.5),900px)!important;max-height:42dvh!important;margin:12px auto!important}
+      body.host-display .arena-lobby-rosters{display:none}
+      body.host-display .stage{width:min(100%,calc(62dvh * 1.5),960px);max-height:62dvh}
+      body.host-display.tutorial-active .app{display:block}body.host-display.tutorial-active .desktop-roster{display:none}
+    }
+    @media(min-width:1024px){
+      body.input-active{height:100dvh;overflow:hidden}body.input-active .app{width:min(100%,1100px);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+      body.input-active #screen{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,45fr) minmax(0,55fr);gap:20px;overflow:hidden}
+      body.input-active .scene-intro,body.input-active .scene-actions{min-height:0;min-width:0;overflow:hidden}
+      body.input-active .scene-actions{display:flex;flex-direction:column;justify-content:center}
+      body.input-active .answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex:1;min-height:0}
+      body.input-active .answer{min-height:0;height:100%;overflow-wrap:anywhere}
+      body.input-active .cards{flex:1;min-height:0}body.input-active .char-card{min-height:0;height:100%}
+      body.input-active .goal-ui{flex:1;min-height:0;height:auto;max-height:55dvh}
+      body.input-active .piece-progress,body.input-active .result-grid{display:none}
+    }
+    @media(max-width:950px) and (orientation:landscape){
+      body.input-active{height:100dvh;overflow:hidden}
+      body.input-active .app{width:100%;height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom);overflow:hidden}
+      body.input-active header{flex:none;padding:3px 0}.input-active .brand strong,.input-active .brand small,.input-active .ball-logo,.input-active .status{display:none}
+      body.input-active .scoreboard{flex:none;padding:3px 8px;border-radius:10px}.input-active .score-number{font-size:24px}.input-active .progress-rails,.input-active #rolePanel{display:none!important}
+      body.input-active #screen{flex:1;min-height:0;margin:4px 0 0;padding:6px;display:grid;grid-template-columns:minmax(0,45fr) minmax(0,55fr);gap:8px;overflow:hidden}
+      body.input-active .scene-intro,body.input-active .scene-actions{min-height:0;min-width:0;overflow:hidden}
+      body.input-active .scene-intro{display:flex;flex-direction:column;gap:3px}.input-active .scene-actions{display:flex;flex-direction:column;justify-content:center}
+      body.input-active .scene-intro .eyebrow,body.input-active .scene-intro h1{margin:0;font-size:clamp(10px,1.6vw,15px);line-height:1.1}
+      body.input-active .scene-intro .role-banner{padding:4px;margin:0;border-width:2px}.input-active .role-banner .lang-fr,.input-active .role-banner .lang-vi{font-size:clamp(13px,2vw,22px);line-height:1.1;margin:0}
+      body.input-active .timer-head{margin:0;font-size:11px}.input-active .timer-head strong{font-size:11px}.input-active .timer-num{font-size:clamp(20px,4vw,32px)}.input-active .time-track{height:7px}
+      body.input-active .question-fr,body.input-active .question{font-size:clamp(11px,1.6vw,17px);line-height:1.16;margin:1px 0;overflow-wrap:anywhere}
+      body.input-active .answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;flex:1;min-height:0;margin:0}
+      body.input-active .answer{min-width:0;min-height:0;height:100%;padding:3px 5px;gap:5px;font-size:clamp(10px,1.3vw,14px);line-height:1.12;overflow-wrap:anywhere}.input-active .answer b{width:23px;height:23px;flex:none}
+      body.input-active .answer .lang-fr,.input-active .answer .lang-vi{font-size:inherit}
+      body.input-active .selection-hint{font-size:10px;margin:3px 0;padding:3px}
+      body.input-active .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0;flex:1;min-height:0}
+      body.input-active .char-card{min-height:0;height:100%;padding:3px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:3px}
+      body.input-active .char-card svg{height:min(37dvh,120px);width:100%}.input-active .char-card strong{font-size:clamp(10px,1.3vw,14px);overflow-wrap:anywhere}.input-active .char-card small{display:none}
+      body.input-active .goal-ui{flex:1;min-height:0;height:auto;margin:0;border-width:3px}.input-active .lane{font-size:clamp(10px,1.3vw,14px);gap:2px}.input-active .lane span{font-size:19px}
+      body.input-active .aim-timer{padding:2px;margin:0}.input-active .aim-timer .timer-num{font-size:clamp(30px,8vh,55px)}.input-active .aim-timer .time-track{margin-top:2px}
+      body.input-active .scene-intro .compact-row,body.input-active .result-grid,body.input-active .piece-progress{display:none}
+      body.input-active .scene-actions>.compact-row{display:flex;margin:4px 0;padding:5px 8px}
+      body.input-active .stage{max-height:30dvh;margin:0 auto}
+    }
+    @media(orientation:portrait){
+      .app{width:min(100%,620px);min-height:100dvh}.stage{max-height:38dvh}
+      body.input-active .app{height:100dvh;min-height:0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);overflow:hidden}
+      body.input-active header{flex:none;padding:5px 2px}.input-active .brand small,.input-active .status{display:none}.input-active .ball-logo{width:29px;height:29px;font-size:18px}.input-active .icon-btn{min-width:34px;min-height:34px;padding:3px}
+      body.input-active .scoreboard{flex:none;padding:5px 8px}.input-active .score-number{font-size:clamp(25px,8vw,36px)}.input-active .progress-rails,.input-active #rolePanel{display:none!important}
+      body.input-active #screen{flex:1;min-height:0;margin:5px 0 0;padding:clamp(7px,2vw,14px);display:flex;flex-direction:column;overflow:hidden}
+      body.input-active .scene-intro{flex:none;min-height:0}.input-active .scene-actions{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+      body.input-active .scene-intro .eyebrow,body.input-active .scene-intro h1{font-size:clamp(11px,3vw,16px);margin:0 0 3px}
+      body.input-active .question-fr,body.input-active .question{font-size:clamp(12px,3.3vw,18px);line-height:1.18;margin:3px 0;overflow-wrap:anywhere}
+      body.input-active .timer-head{margin:1px 0}.input-active .timer-num{font-size:clamp(25px,7vw,38px)}.input-active .time-track{height:9px}
+      body.input-active .answers{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));gap:5px;flex:1;min-height:0;margin:0}
+      body.input-active .answer{min-height:0;height:100%;padding:4px 8px;font-size:clamp(11px,3.4vw,16px);line-height:1.12;overflow-wrap:anywhere}.input-active .answer b{width:25px;height:25px}
+      body.input-active .selection-hint{margin:4px 0 0;padding:4px;font-size:11px}
+      body.input-active .role-banner{padding:6px;margin:0 0 5px}.input-active .role-banner .lang-fr,.input-active .role-banner .lang-vi{font-size:clamp(1.1rem,5vw,1.6rem);line-height:1.12}
+      body.input-active .cards{flex:1;min-height:0;margin:5px 0}.input-active .char-card{min-height:0;height:100%;padding:4px}.input-active .char-card svg{height:min(20dvh,105px)}
+      body.input-active .aim-timer{padding:4px;margin:4px 0}.input-active .aim-timer .timer-num{font-size:clamp(45px,12vw,76px)}.input-active .goal-ui{flex:1;min-height:90px;height:auto;max-height:38dvh;margin:5px 2px}.input-active .lane{font-size:clamp(10px,3vw,13px)}
+      body.input-active .piece-progress,body.input-active .result-grid,body.input-active .scene-intro .compact-row{display:none}
+      body.input-active .scene-actions>.compact-row{display:flex;margin:3px 0;padding:5px 8px}
+    }
+    @media(orientation:portrait) and (max-height:650px){body.input-active .answers{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}body.input-active .scene-intro .eyebrow{display:none}body.input-active .brand{gap:4px}body.input-active .role-banner .lang-fr,body.input-active .role-banner .lang-vi{font-size:clamp(13px,3.5vw,18px)}}
   </style>
 </head>
 <body>
@@ -149,6 +221,8 @@
     <header><div class="brand"><div class="ball-logo" aria-hidden="true">⚽</div><div><strong>VIET–FRANCE PENALTY</strong><small><span class="lang-fr">UNIS PAR LE FOOTBALL</span><span class="lang-vi">Gắn kết qua bóng đá</span></small></div></div><div class="row"><div class="status" id="status"><i></i><span><span class="lang-fr">Connexion</span><span class="lang-vi">Đang kết nối</span></span></div><button class="icon-btn" id="hostOpen" title="Hôte / Chủ phòng" aria-label="Hôte / Chủ phòng">⚙</button></div></header>
     <div class="scoreboard" aria-label="Score / Tỷ số"><div class="team-score"><span class="flag-art fr" aria-label="Drapeau français"></span><span><b class="lang-fr">FRANCE</b><small class="lang-vi">Pháp</small></span></div><div class="score-number" id="scoreText">0–0</div><div class="team-score vn"><span><b class="lang-fr">VIETNAM</b><small class="lang-vi">Việt Nam</small></span><span class="flag-art vn" aria-label="Drapeau vietnamien"></span></div></div>
     <div class="progress-rails"><div class="rail"><i id="railFR"></i></div><div class="rail vn"><i id="railVN"></i></div></div>
+    <aside class="desktop-roster fr" id="desktopRosterFR" aria-label="Équipe France / Đội Pháp"></aside>
+    <aside class="desktop-roster vn" id="desktopRosterVN" aria-label="Équipe Vietnam / Đội Việt Nam"></aside>
     <section class="panel" id="rolePanel" hidden></section>
     <main class="panel" id="screen" aria-live="polite"></main>
   </div>
@@ -242,9 +316,11 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   function toast(message){const t=$('toast');fromViFr(t,message);t.hidden=false;clearTimeout(app.toastTimer);app.toastTimer=setTimeout(()=>t.hidden=true,3500)}
   function setOnline(online){$('status').classList.toggle('online',online);fromViFr($('status').querySelector('span'),online?'Đã kết nối / Connecté':'Mất kết nối / Déconnecté')}
   function updateScore(){const s=app.game||{};$('scoreText').textContent=`${s.scoreFR||0}–${s.scoreVN||0}`;$('railFR').style.width=`${Math.min(5,s.scoreFR||0)*20}%`;$('railVN').style.width=`${Math.min(5,s.scoreVN||0)*20}%`}
-  function view(title,eyebrow){const screen=$('screen');screen.replaceChildren();if(eyebrow)screen.append(fromViFr(el('p','eyebrow'),eyebrow));if(title)screen.append(fromViFr(el('h1',''),title));app.stageCanvas=null;app.actorSvg=null;app.lastActorFrame=-1000;app.timerText=null;app.timerBar=null;return screen}
+  function view(title,eyebrow){const screen=$('screen');if(app.stageObserver){app.stageObserver.disconnect();app.stageObserver=null}screen.classList.remove('action-scene');screen.replaceChildren();if(eyebrow)screen.append(fromViFr(el('p','eyebrow'),eyebrow));if(title)screen.append(fromViFr(el('h1',''),title));app.stageCanvas=null;app.actorSvg=null;app.lastActorFrame=-1000;app.timerText=null;app.timerBar=null;return screen}
+  function actionScene(screen){screen.classList.add('action-scene');const intro=el('div','scene-intro'),actions=el('div','scene-actions');while(screen.firstChild)intro.append(screen.firstChild);screen.append(intro,actions);return {intro,actions}}
+  function updateDesktopRosters(s){for(const team of [0,1]){const target=$(team?'desktopRosterVN':'desktopRosterFR');target.replaceChildren();const box=el('section',`arena-roster ${team?'vn':'fr'}`);box.append(bilingual(el('h2',''),`${TEAM_FLAG[team]} ${teamLabel(team)[0]}`,teamLabel(team)[1]));const members=(s?.roster||[]).filter(x=>x.team===team);if(!members.length)box.append(bilingual(el('p','muted tiny'),'En attente','Đang chờ thành viên'));for(const member of members)box.append(bilingual(el('div','member'),`${member.role===0?'★ JOUEUR':'• SPECTATEUR'} · ${member.name}`,`${member.role===0?'Người chơi':'Khán giả'} · ${member.name}`));target.append(box)}}
   function paragraph(parent,text,cls='muted'){parent.append(fromViFr(el('p',cls),text))}
-  function stage(parent){const box=el('div','stage');const canvas=el('canvas');canvas.width=360;canvas.height=240;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 360 240');svg.classList.add('actor-layer');box.append(canvas,svg);parent.append(box);app.stageCanvas=canvas;app.actorSvg=svg;return canvas}
+  function stage(parent){const box=el('div','stage');const canvas=el('canvas');canvas.width=360;canvas.height=240;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 360 240');svg.classList.add('actor-layer');box.append(canvas,svg);parent.append(box);app.stageCanvas=canvas;app.actorSvg=svg;if('ResizeObserver' in window){app.stageObserver=new ResizeObserver(entries=>{const width=entries[0]?.contentRect.width||0;box.style.setProperty('--stage-width',`${Math.round(width)}px`);if(!box.isConnected)return;const ctx=canvas.getContext('2d');if(app.game?.state==='LOBBY'&&app.me?.role===2)drawHostLobbyCanvas(ctx);else if(app.game?.state==='AIM_STANDOFF')drawStandoffCanvas(ctx,app.game)});app.stageObserver.observe(box)}return canvas}
   function timer(parent,label,total){const head=el('div','timer-head');head.append(fromViFr(el('strong',''),label));app.timerText=el('span','timer-num','');head.append(app.timerText);parent.append(head);const track=el('div','time-track');app.timerBar=el('i');track.append(app.timerBar);parent.append(track);app.timerTotal=total}
   function quickInfo(parent,icon,fr,vi){const row=el('div','compact-row');row.append(el('span','icon',icon),bilingual(el('div',''),fr,vi));parent.append(row)}
   function teamLabel(team){return team===0?['ÉQUIPE FRANCE','Đội Pháp']:['ÉQUIPE VIETNAM','Đội Việt Nam']}
@@ -305,13 +381,13 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
   function showTrivia(s){
     if(app.me?.role===2){showHostTrivia(s);return}
     const duration=s.triviaMs||10000,p=view('Câu hỏi văn hóa / Question culturelle',`${duration/1000} GIÂY / SECONDES`);
-    timer(p,'Thời gian trả lời / Temps de réponse',duration);if(s.qFr)p.append(el('p','question-fr',s.qFr));p.append(el('div','question',s.qVi||''));
-    const answers=el('div','answers');const hint=selectionHint(p);hint.hidden=app.selectedAnswer===null;
+    const {intro,actions}=actionScene(p);timer(intro,'Thời gian trả lời / Temps de réponse',duration);if(s.qFr)intro.append(el('p','question-fr',s.qFr));intro.append(el('div','question',s.qVi||''));
+    const answers=el('div','answers');const hint=selectionHint(actions);hint.hidden=app.selectedAnswer===null;
     (s.options||[]).forEach((option,index)=>{const b=button('',`answer${app.selectedAnswer===index?' selected':''}`,()=>{
       if(app.me?.role===2||remain()<=0)return;
       if(send({t:'select_ans',a:index})){app.selectedAnswer=index;hint.hidden=false;answers.querySelectorAll('button').forEach(x=>{const active=Number(x.dataset.answer)===index;x.classList.toggle('selected',active);x.setAttribute('aria-pressed',String(active))})}
     });b.dataset.answer=index;b.setAttribute('aria-pressed',String(app.selectedAnswer===index));b.append(el('b','',String.fromCharCode(65+index)),bilingual(el('span',''),...bilingualOption(option)));b.disabled=app.me?.role===2||remain()<=0;answers.append(b)});
-    p.insertBefore(answers,hint);
+    actions.insertBefore(answers,hint);
     if(app.me?.role===2)p.append(el('p','muted',`Pháp / France: ${(app.triviaProgress?.fr??s.answeredFR??0)}/${s.membersFR||0} · Việt Nam / Vietnam: ${(app.triviaProgress?.vn??s.answeredVN??0)}/${s.membersVN||0}`));
   }
   function showHostTrivia(s){
@@ -341,40 +417,42 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     if(app.me?.role===2){showHostCharacters(s);return}
     const main=app.me?.role===0,shooter=app.me?.team===s.shootingTeam;
     const p=view(main?(shooter?'Chọn cầu thủ / Choisissez votre joueur':'Chọn thủ môn / Choisissez votre gardien'):'Đang chọn nhân vật / Choix des joueurs','8 GIÂY / 8 SECONDES');
+    const {intro,actions}=actionScene(p);
     const banner=main
       ?(shooter?bilingual(el('div','role-banner shooter'),'⚽ VOUS ÊTES LE TIREUR','BẠN LÀ NGƯỜI SÚT')
                 :bilingual(el('div','role-banner keeper'),'🧤 VOUS ÊTES LE GARDIEN','BẠN LÀ NGƯỜI BẮT GÔN'))
       :bilingual(el('div','role-banner spectator'),'📣 VOUS ÊTES SPECTATEUR','BẠN LÀ KHÁN GIẢ');
-    p.prepend(banner);
-    resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',8000);
+    intro.prepend(banner);
+    resultBanner(intro,s);timer(intro,'Thời gian chọn / Temps de choix',8000);
     if(!main){
-      quickInfo(p,'⚽',`${teamLabel(s.shootingTeam)[0]} choisit le tireur`,`${teamLabel(s.shootingTeam)[1]} chọn cầu thủ sút`);
-      quickInfo(p,'🧤',`${teamLabel(1-s.shootingTeam)[0]} choisit le gardien`,`${teamLabel(1-s.shootingTeam)[1]} chọn thủ môn`);
+      quickInfo(actions,'⚽',`${teamLabel(s.shootingTeam)[0]} choisit le tireur`,`${teamLabel(s.shootingTeam)[1]} chọn cầu thủ sút`);
+      quickInfo(actions,'🧤',`${teamLabel(1-s.shootingTeam)[0]} choisit le gardien`,`${teamLabel(1-s.shootingTeam)[1]} chọn thủ môn`);
       return;
     }
     const cards=el('div','cards');actorOptions(s).forEach((actor,index)=>{
       const b=button('',`char-card${app.selectedChar===index?' selected':''}`,()=>{if(remain()<=0)return;if(send({t:'select_char',charId:index})){app.selectedChar=index;cards.querySelectorAll('button').forEach(x=>x.classList.toggle('selected',Number(x.dataset.char)===index))}});
       b.dataset.char=index;
       b.append(actorPortrait(actor),el('strong','',actor.name),bilingual(el('small',''),`PERSONNAGE ${index+1}`,`Nhân vật ${index+1}`));cards.append(b);
-    });p.append(cards);quickInfo(p,'🔄','Choix modifiable','Có thể đổi lựa chọn');
+    });actions.append(cards);quickInfo(actions,'🔄','Choix modifiable','Có thể đổi lựa chọn');
   }
   function showAim(s){
     if(app.me?.role===2){showHostAim(s);return}
     const p=view('Chọn hướng / Choisissez une direction','7 GIÂY / 7 SECONDES');
+    const {intro,actions}=actionScene(p);
     const main=app.me?.role===0;
-    quickInfo(p,main?'🎯':'👀',main?(app.me.team===s.shootingTeam?'VOUS TIREZ':'VOUS GARDEZ'):'DUEL EN COURS',main?(app.me.team===s.shootingTeam?'Bạn sút':'Bạn bắt gôn'):'Đang đấu trí');
+    quickInfo(intro,main?'🎯':'👀',main?(app.me.team===s.shootingTeam?'VOUS TIREZ':'VOUS GARDEZ'):'DUEL EN COURS',main?(app.me.team===s.shootingTeam?'Bạn sút':'Bạn bắt gôn'):'Đang đấu trí');
     const clock=el('div','aim-timer');const label=bilingual(el('strong',''),'TIR À ZÉRO','Sút khi hết giờ');
-    app.timerText=el('span','timer-num','7.0s');const track=el('div','time-track');app.timerBar=el('i');track.append(app.timerBar);app.timerTotal=7000;clock.append(label,app.timerText,track);p.append(clock);
-    const goal=el('div','goal-ui');const hint=selectionHint(p);hint.hidden=app.selectedDir===null;
+    app.timerText=el('span','timer-num','7.0s');const track=el('div','time-track');app.timerBar=el('i');track.append(app.timerBar);app.timerTotal=7000;clock.append(label,app.timerText,track);intro.append(clock);
+    const goal=el('div','goal-ui');const hint=selectionHint(actions);hint.hidden=app.selectedDir===null;
     const names=[['TRÁI','GAUCHE'],['GIỮA','MILIEU'],['PHẢI','DROITE']];
     names.forEach(([vi,fr],dir)=>{const blocked=dir===s.blockedLane;const b=button('',`lane${blocked?' blocked':''}${app.selectedDir===dir?' selected':''}`,()=>{
       if(!main||blocked||remain()<=0)return;
       const t=app.me.team===s.shootingTeam?'shoot':'save';
       if(send({t,dir})){app.selectedDir=dir;hint.hidden=false;goal.querySelectorAll('button').forEach(x=>{const active=Number(x.dataset.dir)===dir;x.classList.toggle('selected',active);x.setAttribute('aria-pressed',String(active))})}
     });b.dataset.dir=dir;b.setAttribute('aria-pressed',String(app.selectedDir===dir));b.append(el('span','',blocked?'🔒':dir===1?'🥅':'⚽'),bilingual(el('strong',''),fr,vi));b.disabled=!main||blocked||remain()<=0;goal.append(b)});
-    p.insertBefore(goal,hint);
-    if(s.blockedLane>=0)p.append(bilingual(el('div','buff'),'🛡️ 2 DIRECTIONS · 50 %','Khóa 1 góc'));else p.append(bilingual(el('div','notice ok'),'⚡ 3 DIRECTIONS','Đủ 3 hướng'));
-    pieceProgress(p,s);
+    actions.insertBefore(goal,hint);
+    if(s.blockedLane>=0)intro.append(bilingual(el('div','buff'),'🛡️ 2 DIRECTIONS · 50 %','Khóa 1 góc'));else intro.append(bilingual(el('div','notice ok'),'⚡ 3 DIRECTIONS','Đủ 3 hướng'));
+    pieceProgress(intro,s);
   }
   function showHostAim(s){
     const p=view('Đấu trí sút phạt / Duel des tirs au but','SÚT KHI HẾT GIỜ / TIR À ZÉRO');
@@ -459,7 +537,7 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     if(app.me?.role===2)footer.append(button('Tiếp tục / SUIVANT','primary wide',()=>hostCommand('tutorial_next')));
     p.append(footer);
   }
-  function render(){document.body.classList.toggle('host-display',app.me?.role===2);$('hostBar').hidden=app.me?.role!==2;document.body.classList.toggle('tutorial-active',app.game?.state==='TUTORIAL_SLIDES'&&!!app.me);document.body.classList.toggle('host-stage-active',app.me?.role===2&&['COIN_TOSS','AIM_STANDOFF','PENALTY_ANIM','MONUMENT_BUILD','VICTORY_CEREMONY'].includes(app.game?.state));updateScore();if(!app.identityReady){view("Đang kết nối / Connexion en cours","VIET–FRANCE PENALTY");return}if(!app.me){showJoin();showJoinAvailability();return}const hostDisplay=app.me.role===2;roleNotice();const s=app.game;if(!s){if(hostDisplay)showHostLobby({});else showLobby({scoreFR:0,scoreVN:0});return}app.phase=s.state;switch(s.state){case 'LOBBY':hostDisplay?showHostLobby(s):showLobby(s);break;case 'TUTORIAL_SLIDES':showTutorial(s);break;case 'COIN_TOSS':showCoin(s);break;case 'COUNTDOWN':showCountdown(s);break;case 'TRIVIA_10S':showTrivia(s);break;case 'CHAR_SELECT_8S':showCharacters(s);break;case 'AIM_STANDOFF':showAim(s);break;case 'PENALTY_ANIM':showShot(s);break;case 'MONUMENT_BUILD':showBuild(s);break;case 'VICTORY_CEREMONY':showVictory(s);break;default:showLobby(s)}}
+  function render(){document.body.classList.toggle('host-display',app.me?.role===2);document.body.classList.toggle('input-active',app.me?.role!==2&&['TRIVIA_10S','CHAR_SELECT_8S','AIM_STANDOFF'].includes(app.game?.state));$('hostBar').hidden=app.me?.role!==2;document.body.classList.toggle('tutorial-active',app.game?.state==='TUTORIAL_SLIDES'&&!!app.me);document.body.classList.toggle('host-stage-active',app.me?.role===2&&['COIN_TOSS','AIM_STANDOFF','PENALTY_ANIM','MONUMENT_BUILD','VICTORY_CEREMONY'].includes(app.game?.state));updateScore();if(!app.identityReady){view("Đang kết nối / Connexion en cours","VIET–FRANCE PENALTY");return}if(!app.me){showJoin();showJoinAvailability();return}const hostDisplay=app.me.role===2;if(hostDisplay)updateDesktopRosters(app.game);roleNotice();const s=app.game;if(!s){if(hostDisplay)showHostLobby({});else showLobby({scoreFR:0,scoreVN:0});return}app.phase=s.state;switch(s.state){case 'LOBBY':hostDisplay?showHostLobby(s):showLobby(s);break;case 'TUTORIAL_SLIDES':showTutorial(s);break;case 'COIN_TOSS':showCoin(s);break;case 'COUNTDOWN':showCountdown(s);break;case 'TRIVIA_10S':showTrivia(s);break;case 'CHAR_SELECT_8S':showCharacters(s);break;case 'AIM_STANDOFF':showAim(s);break;case 'PENALTY_ANIM':showShot(s);break;case 'MONUMENT_BUILD':showBuild(s);break;case 'VICTORY_CEREMONY':showVictory(s);break;default:showLobby(s)}}
   function onState(s){const previous=app.game?.state,previousBeat=app.lastBeat;const changed=previous!==s.state||app.game?.questionId!==s.questionId||app.game?.tutorialSlide!==s.tutorialSlide;if(previous&&previous!=='LOBBY'&&s.state==='LOBBY'&&!app.me?.host){app.me=null;clearTeamSelection()}app.game=s;app.deadline=now()+(s.remainingMs||0);app.phaseStart=now();if(changed){syncAudioForState(previous,s,previousBeat);app.lastBeat=null;app.selectedDir=null;app.selectedChar=null;if(s.state==='TRIVIA_10S'){app.selectedAnswer=null;app.triviaResult=null;app.triviaProgress=null}if(s.state==='COIN_TOSS'){app.coinStopped=false;app.coinWinner=s.winnerTeam}}render();syncHostPanel()}
   function clearTeamSelection(){app.saved=null;app.chosenTeam=null;app.selectedAnswer=null;app.selectedChar=null;app.selectedDir=null;try{localStorage.removeItem('team');localStorage.removeItem('role');localStorage.removeItem('vfpIdentity')}catch{}}
   function onPacket(m){switch(m.t){
