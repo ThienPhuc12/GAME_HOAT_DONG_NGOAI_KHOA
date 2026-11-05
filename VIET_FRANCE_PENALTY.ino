@@ -58,9 +58,9 @@ static uint8_t tutorialSlide = 0;
 static Team shootingTeam = TEAM_FR;
 static uint8_t score[2] = {0, 0};
 static uint8_t selectedChar[2] = {255, 255};
-static int8_t shootDir = -1, saveDir = -1;
-static int8_t blockedLane = -1;
-static uint8_t activeLanes = 3;
+static int8_t shootZone = -1, saveZone1 = -1, saveZone2 = -1;
+static int8_t blockedZones[2] = {-1, -1};
+static uint8_t activeZones = 6;
 static bool goal = false;
 static bool coinResultSent = false;
 static bool soloMode = false;
@@ -79,6 +79,7 @@ static const char* stateName(GameState s) {
     case STATE_COIN_TOSS: return "COIN_TOSS";
     case STATE_COUNTDOWN: return "COUNTDOWN";
     case STATE_TRIVIA_10S: return "TRIVIA_10S";
+    case STATE_TRIVIA_REVEAL: return "TRIVIA_REVEAL";
     case STATE_CHAR_SELECT_8S: return "CHAR_SELECT_8S";
     case STATE_AIM_STANDOFF: return "AIM_STANDOFF";
     case STATE_PENALTY_ANIM: return "PENALTY_ANIM";
@@ -93,6 +94,7 @@ static uint32_t stateDuration(GameState s) {
     case STATE_COIN_TOSS: return COIN_TOSS_MS;
     case STATE_COUNTDOWN: return COUNTDOWN_MS;
     case STATE_TRIVIA_10S: return TRIVIA_MS;
+    case STATE_TRIVIA_REVEAL: return TRIVIA_REVEAL_MS;
     case STATE_CHAR_SELECT_8S: return CHAR_SELECT_MS;
     case STATE_AIM_STANDOFF: return AIM_MS;
     case STATE_PENALTY_ANIM: return SHOT_ANIM_MS;
@@ -168,6 +170,7 @@ static void sendState(uint32_t clientId = 0) {
   doc["mainFR"] = players.hasMain(TEAM_FR);
   doc["mainVN"] = players.hasMain(TEAM_VN);
   doc["triviaMs"] = TRIVIA_MS;
+  doc["triviaRevealMs"] = TRIVIA_REVEAL_MS;
   doc["soloMode"] = soloMode;
   if (state == STATE_TUTORIAL_SLIDES) doc["tutorialSlide"] = tutorialSlide;
   JsonArray roster = doc.createNestedArray("roster");
@@ -181,7 +184,7 @@ static void sendState(uint32_t clientId = 0) {
     member["bot"] = p.bot;
   }
   if (state == STATE_COIN_TOSS) doc["winnerTeam"] = static_cast<uint8_t>(shootingTeam);
-  if (state == STATE_TRIVIA_10S) {
+  if (state == STATE_TRIVIA_10S || state == STATE_TRIVIA_REVEAL) {
     doc["answeredFR"] = trivia.answeredCount(TEAM_FR);
     doc["answeredVN"] = trivia.answeredCount(TEAM_VN);
     doc["questionId"] = currentQuestionId;
@@ -193,17 +196,46 @@ static void sendState(uint32_t clientId = 0) {
     opts.add(currentQuestion.optC);
     opts.add(currentQuestion.optD);
   }
+  if (state == STATE_TRIVIA_REVEAL) {
+    const TriviaResult result = trivia.result();
+    doc["correctIdx"] = currentQuestion.correctIdx;
+    doc["correctFR"] = trivia.correctCount(TEAM_FR);
+    doc["correctVN"] = trivia.correctCount(TEAM_VN);
+    doc["totalFR"] = trivia.totalCount(TEAM_FR);
+    doc["totalVN"] = trivia.totalCount(TEAM_VN);
+    doc["pctFR"] = result.pctFR;
+    doc["pctVN"] = result.pctVN;
+    doc["activeZones"] = result.activeZones;
+    JsonArray blocked = doc.createNestedArray("blockedZones");
+    if (result.blockedZones[0] >= 0) blocked.add(result.blockedZones[0]);
+    if (result.blockedZones[1] >= 0) blocked.add(result.blockedZones[1]);
+    Player* viewer = clientId ? players.findByClient(clientId) : nullptr;
+    if (viewer) doc["myChoice"] = trivia.choiceFor(viewer->team, viewer->triviaSlot);
+  }
   if (state >= STATE_CHAR_SELECT_8S && state <= STATE_MONUMENT_BUILD) {
-    doc["activeLanes"] = activeLanes;
-    doc["blockedLane"] = blockedLane;
+    doc["activeZones"] = activeZones;
+    JsonArray blocked = doc.createNestedArray("blockedZones");
+    if (blockedZones[0] >= 0) blocked.add(blockedZones[0]);
+    if (blockedZones[1] >= 0) blocked.add(blockedZones[1]);
     doc["pctFR"] = trivia.result().pctFR;
     doc["pctVN"] = trivia.result().pctVN;
     doc["charFR"] = selectedChar[TEAM_FR];
     doc["charVN"] = selectedChar[TEAM_VN];
   }
+  if (state == STATE_AIM_STANDOFF) {
+    Player* viewer = clientId ? players.findByClient(clientId) : nullptr;
+    if (viewer && viewer->role == ROLE_MAIN_PLAYER) {
+      if (viewer->team == shootingTeam) doc["shootZone"] = shootZone;
+      else {
+        doc["saveZone1"] = saveZone1;
+        doc["saveZone2"] = saveZone2;
+      }
+    }
+  }
   if (state == STATE_PENALTY_ANIM || state == STATE_MONUMENT_BUILD) {
-    doc["shootDir"] = shootDir;
-    doc["saveDir"] = saveDir;
+    doc["shootZone"] = shootZone;
+    doc["saveZone1"] = saveZone1;
+    doc["saveZone2"] = saveZone2;
     doc["goal"] = goal;
   }
   if (state == STATE_VICTORY_CEREMONY) appendVictoryLists(doc);
@@ -240,10 +272,29 @@ static void startTrivia(uint32_t now) {
   setState(STATE_TRIVIA_10S, now);
 }
 
-static uint8_t randomActiveLane() {
-  uint8_t lane;
-  do { lane = static_cast<uint8_t>(random(3)); } while (lane == blockedLane);
-  return lane;
+static bool isZoneActive(int8_t zone) {
+  return zone >= 0 && zone < 6 && zone != blockedZones[0] && zone != blockedZones[1];
+}
+
+static uint8_t randomActiveZone(int8_t excluded = -1) {
+  uint8_t zone;
+  do { zone = static_cast<uint8_t>(random(6)); }
+  while (!isZoneActive(zone) || zone == excluded);
+  return zone;
+}
+
+static void randomBlockedZones() {
+  const uint8_t first = static_cast<uint8_t>(random(6));
+  const uint8_t offset = static_cast<uint8_t>(1 + random(5));
+  blockedZones[0] = static_cast<int8_t>(first);
+  blockedZones[1] = static_cast<int8_t>((first + offset) % 6);
+  activeZones = 4;
+}
+
+static void completeKeeperZones() {
+  if (!isZoneActive(saveZone1)) saveZone1 = static_cast<int8_t>(randomActiveZone());
+  if (!isZoneActive(saveZone2) || saveZone2 == saveZone1)
+    saveZone2 = static_cast<int8_t>(randomActiveZone(saveZone1));
 }
 
 static void sendJoined(const Player& player) {
@@ -295,8 +346,9 @@ static void resetMatch(uint32_t now) {
   soloMode = false;
   score[TEAM_FR] = score[TEAM_VN] = 0;
   selectedChar[TEAM_FR] = selectedChar[TEAM_VN] = 255;
-  shootDir = saveDir = blockedLane = -1;
-  activeLanes = 3;
+  shootZone = saveZone1 = saveZone2 = -1;
+  blockedZones[0] = blockedZones[1] = -1;
+  activeZones = 6;
   goal = coinResultSent = false;
   questionCursor = QUESTION_COUNT;
   tutorialSlide = 0;
@@ -390,7 +442,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_HOST_SETTINGS) {
-    sendError(cmd.clientId, "Quiz fixé à 10 secondes / Câu hỏi cố định 10 giây");
+    sendError(cmd.clientId, "Quiz fixé à 15 secondes / Câu hỏi cố định 15 giây");
     return;
   }
   if (cmd.type == CMD_HOST_BOTS) {
@@ -405,9 +457,8 @@ static void processCommand(const Command& cmd, uint32_t now) {
     return;
   }
   if (cmd.type == CMD_TEST_BLOCK) {
-    activeLanes = 2;
-    blockedLane = static_cast<int8_t>(random(3));
-    shootDir = saveDir = -1;
+    randomBlockedZones();
+    shootZone = saveZone1 = saveZone2 = -1;
     goal = false;
     for (uint8_t t = 0; t < 2; ++t)
       if (selectedChar[t] == 255) selectedChar[t] = static_cast<uint8_t>(random(2));
@@ -487,12 +538,32 @@ static void processCommand(const Command& cmd, uint32_t now) {
   if (cmd.type == CMD_SHOOT || cmd.type == CMD_SAVE) {
     const bool isShooter = p->team == shootingTeam;
     if (state != STATE_AIM_STANDOFF || elapsed(cmd.receivedAt) >= AIM_MS ||
-        (cmd.type == CMD_SHOOT) != isShooter || cmd.value < 0 || cmd.value > 2 ||
-        cmd.value == blockedLane) {
-      sendError(cmd.clientId, "Hướng không hợp lệ / Direction invalide"); return;
+        (cmd.type == CMD_SHOOT) != isShooter || !isZoneActive(cmd.value)) {
+      sendError(cmd.clientId, "Ô khung thành không hợp lệ / Zone invalide"); return;
     }
-    int8_t& choice = isShooter ? shootDir : saveDir;
-    choice = cmd.value;
+    if (isShooter) {
+      shootZone = cmd.value;
+    } else if (cmd.value == saveZone1) {
+      saveZone1 = saveZone2;
+      saveZone2 = -1;
+    } else if (cmd.value == saveZone2) {
+      saveZone2 = -1;
+    } else if (saveZone1 < 0) {
+      saveZone1 = cmd.value;
+    } else if (saveZone2 < 0) {
+      saveZone2 = cmd.value;
+    } else {
+      saveZone1 = saveZone2;
+      saveZone2 = cmd.value;
+    }
+    StaticJsonDocument<96> ack;
+    ack["t"] = "aim_ack";
+    if (isShooter) ack["shootZone"] = shootZone;
+    else {
+      ack["saveZone1"] = saveZone1;
+      ack["saveZone2"] = saveZone2;
+    }
+    sendJson(cmd.clientId, ack);
   }
 }
 
@@ -517,8 +588,8 @@ static void tickGame(uint32_t now) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (!p.used || !p.bot || p.role != ROLE_MAIN_PLAYER) continue;
-      if (p.team == shootingTeam && shootDir < 0) shootDir = randomActiveLane();
-      if (p.team != shootingTeam && saveDir < 0) saveDir = randomActiveLane();
+      if (p.team == shootingTeam && shootZone < 0) shootZone = randomActiveZone();
+      if (p.team != shootingTeam) completeKeeperZones();
     }
   }
   switch (state) {
@@ -546,25 +617,35 @@ static void tickGame(uint32_t now) {
       if (elapsed(now) >= TRIVIA_MS && trivia.finish(now, shootingTeam)) {
         players.recordTriviaResult(trivia);
         TriviaResult result = trivia.result();
-        activeLanes = result.activeLanes;
-        blockedLane = result.blockedLane;
+        activeZones = result.activeZones;
+        blockedZones[0] = result.blockedZones[0];
+        blockedZones[1] = result.blockedZones[1];
         selectedChar[0] = selectedChar[1] = 255;
-        StaticJsonDocument<192> doc;
+        StaticJsonDocument<256> doc;
         doc["t"] = "trivia_result";
         doc["pctFR"] = result.pctFR;
         doc["pctVN"] = result.pctVN;
-        doc["activeLanes"] = activeLanes;
-        doc["blockedLane"] = blockedLane;
+        doc["activeZones"] = activeZones;
+        doc["correctFR"] = trivia.correctCount(TEAM_FR);
+        doc["correctVN"] = trivia.correctCount(TEAM_VN);
+        doc["totalFR"] = trivia.totalCount(TEAM_FR);
+        doc["totalVN"] = trivia.totalCount(TEAM_VN);
+        JsonArray blocked = doc.createNestedArray("blockedZones");
+        if (blockedZones[0] >= 0) blocked.add(blockedZones[0]);
+        if (blockedZones[1] >= 0) blocked.add(blockedZones[1]);
         doc["correctIdx"] = currentQuestion.correctIdx;
         sendJson(0, doc);
-        setState(STATE_CHAR_SELECT_8S, now);
+        setState(STATE_TRIVIA_REVEAL, now);
       }
+      break;
+    case STATE_TRIVIA_REVEAL:
+      if (elapsed(now) >= TRIVIA_REVEAL_MS) setState(STATE_CHAR_SELECT_8S, now);
       break;
     case STATE_CHAR_SELECT_8S:
       if (elapsed(now) >= CHAR_SELECT_MS) {
         for (uint8_t t = 0; t < 2; ++t)
           if (selectedChar[t] == 255) selectedChar[t] = t == shootingTeam ? static_cast<uint8_t>(random(2)) : 0;
-        shootDir = saveDir = -1;
+        shootZone = saveZone1 = saveZone2 = -1;
         StaticJsonDocument<96> doc;
         doc["t"] = "characters";
         doc["fr"] = selectedChar[TEAM_FR];
@@ -575,13 +656,17 @@ static void tickGame(uint32_t now) {
       break;
     case STATE_AIM_STANDOFF:
       if (elapsed(now) >= AIM_MS) {
-        if (shootDir < 0) shootDir = randomActiveLane();
-        if (saveDir < 0) saveDir = randomActiveLane();
-        goal = shootDir != saveDir;
-        StaticJsonDocument<160> doc;
+        if (!isZoneActive(shootZone)) shootZone = static_cast<int8_t>(randomActiveZone());
+        completeKeeperZones();
+        goal = shootZone != saveZone1 && shootZone != saveZone2;
+        StaticJsonDocument<256> doc;
         doc["t"] = "shot";
-        doc["shootDir"] = shootDir;
-        doc["saveDir"] = saveDir;
+        doc["shootZone"] = shootZone;
+        doc["saveZone1"] = saveZone1;
+        doc["saveZone2"] = saveZone2;
+        JsonArray blocked = doc.createNestedArray("blockedZones");
+        if (blockedZones[0] >= 0) blocked.add(blockedZones[0]);
+        if (blockedZones[1] >= 0) blocked.add(blockedZones[1]);
         doc["goal"] = goal;
         doc["shootingTeam"] = static_cast<uint8_t>(shootingTeam);
         sendJson(0, doc);
@@ -678,8 +763,8 @@ static void onWsEvent(AsyncWebSocket*, AsyncWebSocketClient* client,
     } else if (!strcmp(t, "select_ans")) { cmd.type = CMD_SELECT_ANS; cmd.value = doc["a"] | -1; }
     else if (!strcmp(t, "answer")) { cmd.type = CMD_SELECT_ANS; cmd.value = doc["idx"] | -1; }
     else if (!strcmp(t, "select_char")) { cmd.type = CMD_SELECT_CHAR; cmd.value = doc["charId"] | -1; }
-    else if (!strcmp(t, "shoot")) { cmd.type = CMD_SHOOT; cmd.value = doc["dir"] | -1; }
-    else if (!strcmp(t, "save")) { cmd.type = CMD_SAVE; cmd.value = doc["dir"] | -1; }
+    else if (!strcmp(t, "shoot")) { cmd.type = CMD_SHOOT; cmd.value = doc["zone"] | (doc["dir"] | -1); }
+    else if (!strcmp(t, "save")) { cmd.type = CMD_SAVE; cmd.value = doc["zone"] | (doc["dir"] | -1); }
     else return;
   } else return;
   if (xQueueSend(commandQueue, &cmd, 0) != pdTRUE) client->text("{\"t\":\"error\",\"message\":\"Máy chủ đang bận\"}");

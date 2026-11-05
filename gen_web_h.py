@@ -5,6 +5,8 @@ Usage: python gen_web_h.py [--source web/player.html] [--output web_player.h]
 import argparse
 from pathlib import Path
 
+from gen_landmark_assets import inject_landmark_assets
+
 ROOT = Path(__file__).resolve().parent
 
 
@@ -27,6 +29,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=ROOT / "web_player.h")
     args = parser.parse_args()
     html = args.source.read_text(encoding="utf-8-sig")
+    embedded = inject_landmark_assets(html)
+    if embedded != html:
+        html = embedded
+        if args.source.resolve() == (ROOT / "web" / "player.html").resolve():
+            args.source.write_text(html, encoding="utf-8", newline="\n")
     args.output.write_text(render(html), encoding="utf-8", newline="\n")
     print(f"Packed {len(html.encode('utf-8'))} HTML bytes into {args.output}")
 

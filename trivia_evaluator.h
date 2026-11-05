@@ -14,11 +14,11 @@ enum Team : uint8_t { TEAM_FR = 0, TEAM_VN = 1 };
 struct TriviaResult {
   float pctFR = 0.0f;
   float pctVN = 0.0f;
-  uint8_t activeLanes = 3;
-  int8_t blockedLane = -1;
+  uint8_t activeZones = 6;
+  int8_t blockedZones[2] = {-1, -1};
 
-  bool isLaneActive(uint8_t lane) const {
-    return lane < 3 && lane != blockedLane;
+  bool isZoneActive(uint8_t zone) const {
+    return zone < 6 && zone != blockedZones[0] && zone != blockedZones[1];
   }
 };
 
@@ -29,9 +29,9 @@ class TriviaEvaluator {
  public:
   static constexpr uint32_t DURATION_MS = TRIVIA_MS;
   static constexpr uint8_t MAX_MEMBERS_PER_TEAM = 64;
-  using LaneRng = uint8_t (*)();
+  using ZoneRng = uint8_t (*)();
 
-  explicit TriviaEvaluator(LaneRng rng = defaultLane) : rng_(rng ? rng : defaultLane) {}
+  explicit TriviaEvaluator(ZoneRng rng = defaultZone) : rng_(rng ? rng : defaultZone) {}
 
   // One mutable answer per member; scoring happens only at the deadline.
   bool begin(uint8_t membersFR, uint8_t membersVN, uint8_t correctIdx,
@@ -84,8 +84,11 @@ class TriviaEvaluator {
     const float pct[2] = {result_.pctFR, result_.pctVN};
     const uint8_t shooter = static_cast<uint8_t>(shootingTeam);
     if (pct[1 - shooter] > pct[shooter]) {
-      result_.activeLanes = 2;
-      result_.blockedLane = static_cast<int8_t>(rng_() % 3);
+      const uint8_t first = static_cast<uint8_t>(rng_() % 6);
+      const uint8_t offset = static_cast<uint8_t>(1 + rng_() % 5);
+      result_.activeZones = 4;
+      result_.blockedZones[0] = static_cast<int8_t>(first);
+      result_.blockedZones[1] = static_cast<int8_t>((first + offset) % 6);
     }
     finished_ = true;
     return true;
@@ -104,20 +107,28 @@ class TriviaEvaluator {
         ? choiceElapsedMs_[t][memberSlot] : 0;
   }
   uint8_t correctCount(Team team) const { return correct_[static_cast<uint8_t>(team)]; }
+  uint8_t totalCount(Team team) const {
+    const uint8_t t = static_cast<uint8_t>(team);
+    return t < 2 ? total_[t] : 0;
+  }
+  uint8_t choiceFor(Team team, uint8_t memberSlot) const {
+    const uint8_t t = static_cast<uint8_t>(team);
+    return t < 2 && memberSlot < total_[t] ? choices_[t][memberSlot] : 255;
+  }
   uint8_t answeredCount(Team team) const {
     return static_cast<uint8_t>(__builtin_popcountll(answered_[static_cast<uint8_t>(team)]));
   }
 
  private:
-  static uint8_t defaultLane() {
+  static uint8_t defaultZone() {
 #if defined(ARDUINO_ARCH_ESP32)
-    return static_cast<uint8_t>(esp_random() % 3);
+    return static_cast<uint8_t>(esp_random());
 #else
-    return static_cast<uint8_t>(std::rand() % 3);
+    return static_cast<uint8_t>(std::rand());
 #endif
   }
 
-  LaneRng rng_;
+  ZoneRng rng_;
   uint64_t answered_[2] = {0, 0};
   uint8_t choices_[2][MAX_MEMBERS_PER_TEAM]{};
   uint32_t choiceElapsedMs_[2][MAX_MEMBERS_PER_TEAM]{};

@@ -40,7 +40,7 @@ class ResponsiveLayoutTest(unittest.TestCase):
                         for state, expected_buttons in (
                             ("TRIVIA_10S", 4),
                             ("CHAR_SELECT_8S", 2),
-                            ("AIM_STANDOFF", 3),
+                            ("AIM_STANDOFF", 6),
                         ):
                             with self.subTest(state=state):
                                 page.evaluate(
@@ -49,7 +49,8 @@ class ResponsiveLayoutTest(unittest.TestCase):
                                       app.me = {role: 0, team: 1, name: 'Lan'};
                                       app.game = {
                                         state, shootingTeam: 1, scoreFR: 0, scoreVN: 0,
-                                        blockedLane: -1, remainingMs: 7000, triviaMs: 10000,
+                                        blockedZones: [1, 4], activeZones: 4,
+                                        remainingMs: 7000, triviaMs: 10000,
                                         qFr: 'Quel monument célèbre représente la France et où se trouve-t-il ?',
                                         qVi: 'Công trình nổi tiếng nào đại diện cho nước Pháp và nằm ở đâu?',
                                         options: [
@@ -82,6 +83,44 @@ class ResponsiveLayoutTest(unittest.TestCase):
                                 self.assertEqual(result["buttons"], expected_buttons)
                                 self.assertEqual(result["hidden"], 0)
                         page.close()
+            finally:
+                browser.close()
+
+    def test_keeper_can_replace_or_remove_two_open_zones(self):
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(
+                executable_path=CHROME, headless=True, args=["--no-sandbox"]
+            )
+            try:
+                page = browser.new_page(viewport={"width": 390, "height": 844})
+                page.goto(HTML, wait_until="domcontentloaded")
+                page.evaluate(
+                    """() => {
+                      app.identityReady = true;
+                      app.me = {role: 0, team: 0, name: 'Pierre'};
+                      app.game = {state: 'AIM_STANDOFF', shootingTeam: 1,
+                        scoreFR: 0, scoreVN: 0, blockedZones: [1, 4],
+                        activeZones: 4, remainingMs: 7000};
+                      app.deadline = performance.now() + 7000;
+                      window.sentZones = [];
+                      app.ws = {readyState: WebSocket.OPEN,
+                        send: packet => window.sentZones.push(JSON.parse(packet).zone)};
+                      render();
+                    }"""
+                )
+                self.assertEqual(page.locator(".lane").count(), 6)
+                self.assertEqual(page.locator(".lane:disabled").count(), 2)
+                for zone in (0, 2, 3, 3):
+                    page.locator(f'.lane[data-zone="{zone}"]').click()
+                result = page.evaluate(
+                    """() => ({chosen: app.selectedSaveZones,
+                      sent: window.sentZones,
+                      selected: [...document.querySelectorAll('.lane.save-selected')]
+                        .map(cell => Number(cell.dataset.zone))})"""
+                )
+                self.assertEqual(result["chosen"], [2])
+                self.assertEqual(result["selected"], [2])
+                self.assertEqual(result["sent"], [0, 2, 3, 3])
             finally:
                 browser.close()
 

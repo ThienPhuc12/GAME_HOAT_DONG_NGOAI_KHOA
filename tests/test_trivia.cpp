@@ -28,7 +28,8 @@ int main() {
   auto result = trivia.result();
   assert(result.pctFR == 100.0f);
   assert(result.pctVN > 33.3f && result.pctVN < 33.4f);
-  assert(result.activeLanes == 3 && result.blockedLane == -1);
+  assert(result.activeZones == 6 && result.blockedZones[0] == -1 && result.blockedZones[1] == -1);
+  for (uint8_t zone = 0; zone < 6; ++zone) assert(result.isZoneActive(zone));
 
   assert(trivia.begin(2, 2, 0, 7000));
   assert(trivia.recordChoice(TEAM_FR, 0, 0, 7001));
@@ -36,13 +37,18 @@ int main() {
   assert(trivia.finish(17000, TEAM_FR));
   result = trivia.result();
   assert(result.pctFR == 50.0f && result.pctVN == 50.0f);
-  assert(result.activeLanes == 3);
+  assert(result.activeZones == 6);
 
   assert(trivia.begin(1, 1, 1, 20000));
   assert(trivia.recordChoice(TEAM_FR, 0, 1, 20001));
   assert(trivia.finish(30000, TEAM_VN));
   result = trivia.result();
-  assert(result.activeLanes == 2 && result.blockedLane == 1);
+  assert(result.activeZones == 4);
+  assert(result.blockedZones[0] == 1 && result.blockedZones[1] == 3);
+  assert(!result.isZoneActive(1) && !result.isZoneActive(3));
+  uint8_t openZones = 0;
+  for (uint8_t zone = 0; zone < 6; ++zone) if (result.isZoneActive(zone)) ++openZones;
+  assert(openZones == 4);
 
   assert(trivia.begin(0, 0, 3, 0xFFFFFF00u));
   assert(!trivia.finish(0x0000260Fu, TEAM_VN));
