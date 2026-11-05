@@ -24,6 +24,7 @@ int main() {
   assert(trivia.finish(11000, TEAM_FR));
   assert(trivia.choiceCorrect(TEAM_FR, 0));
   assert(!trivia.choiceCorrect(TEAM_VN, 1));
+  assert(trivia.choiceTimeMs(TEAM_FR, 0) == 9999);
   auto result = trivia.result();
   assert(result.pctFR == 100.0f);
   assert(result.pctVN > 33.3f && result.pctVN < 33.4f);

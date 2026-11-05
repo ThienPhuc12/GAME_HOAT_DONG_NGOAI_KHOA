@@ -107,7 +107,7 @@ static uint32_t remaining(uint32_t now) {
   return elapsed(now) >= duration ? 0 : duration - elapsed(now);
 }
 
-static char jsonOut[3072];
+static char jsonOut[4096];
 template <size_t N> static void sendJson(uint32_t clientId, StaticJsonDocument<N>& doc) {
   if (doc.overflowed()) { Serial.println("JSON document overflow"); return; }
   const size_t n = measureJson(doc);
@@ -133,29 +133,29 @@ static void appendVictoryLists(JsonDocument& doc) {
   JsonArray winners = doc.createNestedArray("winners");
   JsonArray runnersUp = doc.createNestedArray("runnersUp");
   JsonArray predictors = doc.createNestedArray("correctPredictors");
-  JsonArray topSpectators = doc.createNestedArray("topSpectators");
-  uint16_t bestSpectatorScore = 0;
+  JsonArray ranking = doc.createNestedArray("spectatorRanking");
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
     const Player& p = players.players()[i];
     if (!p.used) continue;
     (p.team == winner ? winners : runnersUp).add(p.name);
     if (p.role == ROLE_SPECTATOR && p.prediction == winner) predictors.add(p.name);
-    if (p.role == ROLE_SPECTATOR && !p.bot && p.correctAnswers > bestSpectatorScore)
-      bestSpectatorScore = p.correctAnswers;
   }
-  if (bestSpectatorScore)
-    for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
-      const Player& p = players.players()[i];
-      if (p.used && !p.bot && p.role == ROLE_SPECTATOR && p.correctAnswers == bestSpectatorScore) {
-        JsonObject member = topSpectators.createNestedObject();
-        member["name"] = p.name;
-        member["correct"] = p.correctAnswers;
-      }
-    }
+  uint8_t order[MAX_CLIENTS]{};
+  const uint8_t rankedCount = players.rankSpectators(order, MAX_CLIENTS);
+  for (uint8_t i = 0; i < rankedCount; ++i) {
+    const Player& p = players.players()[order[i]];
+    JsonObject member = ranking.createNestedObject();
+    member["rank"] = i + 1;
+    member["name"] = p.name;
+    member["team"] = static_cast<uint8_t>(p.team);
+    member["correct"] = p.correctAnswersCount;
+    member["total"] = p.totalQuestionsCount;
+    member["timeMs"] = p.totalCorrectTimeMs;
+  }
 }
 
 static void sendState(uint32_t clientId = 0) {
-  static StaticJsonDocument<3072> doc;
+  static StaticJsonDocument<4096> doc;
   doc.clear();
   doc["t"] = "state";
   doc["state"] = stateName(state);
@@ -233,6 +233,7 @@ static void startTrivia(uint32_t now) {
   currentQuestionId = currentQuestion.id;
   if (!trivia.begin(players.count(TEAM_FR), players.count(TEAM_VN),
                     currentQuestion.correctIdx, now, TRIVIA_MS)) return;
+  players.noteTriviaRound();
   for (uint8_t i = 0; i < MAX_CLIENTS; ++i)
     botAnswerDelay[i] = players.players()[i].used && players.players()[i].bot
         ? static_cast<uint16_t>(random(350, TRIVIA_MS - 350)) : 0;
@@ -460,7 +461,7 @@ static void processCommand(const Command& cmd, uint32_t now) {
   }
   if (cmd.type == CMD_SELECT_ANS) {
     if (state != STATE_TRIVIA_10S ||
-        !trivia.recordChoice(p->team, p->teamSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
+        !trivia.recordChoice(p->team, p->triviaSlot, static_cast<uint8_t>(cmd.value), cmd.receivedAt)) {
       sendError(cmd.clientId, "Đáp án sai định dạng hoặc hết giờ / Réponse invalide ou temps écoulé"); return;
     }
     StaticJsonDocument<96> doc;
@@ -500,7 +501,7 @@ static void tickGame(uint32_t now) {
     for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
       const Player& p = players.players()[i];
       if (p.used && p.bot && botAnswerDelay[i] && elapsed(now) >= botAnswerDelay[i]) {
-        trivia.recordChoice(p.team, p.teamSlot, static_cast<uint8_t>(random(4)), now);
+        trivia.recordChoice(p.team, p.triviaSlot, static_cast<uint8_t>(random(4)), now);
         botAnswerDelay[i] = 0;
       }
     }
@@ -543,7 +544,7 @@ static void tickGame(uint32_t now) {
       break;
     case STATE_TRIVIA_10S:
       if (elapsed(now) >= TRIVIA_MS && trivia.finish(now, shootingTeam)) {
-        players.recordSpectatorAnswers(trivia);
+        players.recordTriviaResult(trivia);
         TriviaResult result = trivia.result();
         activeLanes = result.activeLanes;
         blockedLane = result.blockedLane;

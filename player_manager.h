@@ -15,8 +15,11 @@ struct Player {
   Team team = TEAM_FR;
   PlayerRole role = ROLE_SPECTATOR;
   uint8_t teamSlot = 0;
+  uint8_t triviaSlot = 255;
   int8_t prediction = -1;
-  uint16_t correctAnswers = 0;
+  uint16_t correctAnswersCount = 0;
+  uint16_t totalQuestionsCount = 0;
+  uint32_t totalCorrectTimeMs = 0;
   bool used = false;
   bool connected = false;
   bool bot = false;
@@ -187,14 +190,44 @@ class PlayerManager {
   void clearPredictions() {
     for (auto& player : players_) if (player.used) player.prediction = -1;
   }
-  void recordSpectatorAnswers(const TriviaEvaluator& quiz) {
+  void noteTriviaRound() {
+    for (auto& player : players_) if (player.used) {
+      player.triviaSlot = player.teamSlot;
+      ++player.totalQuestionsCount;
+    }
+  }
+  void recordTriviaResult(const TriviaEvaluator& quiz) {
     if (!quiz.finished()) return;
-    for (auto& player : players_) if (player.used && !player.bot && player.role == ROLE_SPECTATOR &&
-                                      quiz.choiceCorrect(player.team, player.teamSlot))
-      ++player.correctAnswers;
+    for (auto& player : players_) if (player.used &&
+                                      quiz.choiceCorrect(player.team, player.triviaSlot)) {
+      ++player.correctAnswersCount;
+      player.totalCorrectTimeMs += quiz.choiceTimeMs(player.team, player.triviaSlot);
+    }
+  }
+  uint8_t rankSpectators(uint8_t* order, uint8_t capacity) const {
+    if (!order || !capacity) return 0;
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < MAX_CLIENTS; ++i) {
+      const Player& candidate = players_[i];
+      if (!candidate.used || candidate.bot || candidate.role != ROLE_SPECTATOR) continue;
+      uint8_t position = 0;
+      while (position < count && !betterRank(candidate, players_[order[position]])) ++position;
+      if (position >= capacity) continue;
+      if (count < capacity) ++count;
+      for (uint8_t j = count - 1; j > position; --j) order[j] = order[j - 1];
+      order[position] = i;
+    }
+    return count;
   }
 
  private:
+  static bool betterRank(const Player& a, const Player& b) {
+    if (a.correctAnswersCount != b.correctAnswersCount)
+      return a.correctAnswersCount > b.correctAnswersCount;
+    if (a.totalCorrectTimeMs != b.totalCorrectTimeMs)
+      return a.totalCorrectTimeMs < b.totalCorrectTimeMs;
+    return strcmp(a.name, b.name) < 0;
+  }
   void reindexTeam(Team team) {
     uint8_t slot = 0;
     hasMainPlayer_[team] = false;

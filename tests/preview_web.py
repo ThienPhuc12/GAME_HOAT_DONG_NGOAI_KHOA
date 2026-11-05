@@ -35,12 +35,13 @@ states = {
     "victory": {"state": "VICTORY_CEREMONY", "scoreFR": 4, "scoreVN": 5,
                 "winnerTeam": 1, "winners": ["Quang Hải", "Lan", "Minh"],
                 "runnersUp": ["Mbappé", "Claire", "Louis"], "correctPredictors": ["Lan", "Louis"],
-                "topSpectators": [{"name": "Lan", "correct": 7}]},
+                "spectatorRanking": [{"rank": 1, "name": "Lan", "team": 1, "correct": 7, "total": 8, "timeMs": 19000},
+                                     {"rank": 2, "name": "Louis", "team": 0, "correct": 5, "total": 8, "timeMs": 27000}]},
     "host_characters": {"state": "CHAR_SELECT_8S", "remainingMs": 8000},
     "host_victory": {"state": "VICTORY_CEREMONY", "scoreFR": 4, "scoreVN": 5,
                      "winnerTeam": 1, "winners": ["Minh", "Lan"],
                      "runnersUp": ["Camille", "Louis"], "correctPredictors": ["Lan"],
-                     "topSpectators": [{"name": "Lan", "correct": 7}]},
+                     "spectatorRanking": [{"rank": 1, "name": "Lan", "team": 1, "correct": 7, "total": 8, "timeMs": 19000}]},
 }
 mode = sys.argv[1]
 if mode not in states:

@@ -115,6 +115,17 @@ static const char WEB_PLAYER_HTML[] PROGMEM = R"VFPWEB(<!doctype html>
     .tutorial-step{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:50%;background:#ffdc75;color:#123b3a;font-weight:950;font-size:20px}
     .tutorial-card .icon{font-size:23px}.tutorial-card .lang-fr{line-height:1.28}.tutorial-card .lang-vi{line-height:1.28}
     .tutorial-footer{margin-top:auto;padding-top:12px}
+    .role-banner{margin:0 0 14px;padding:15px 12px;border:3px solid #ffe6a4;border-radius:18px;text-align:center;color:#fff;box-shadow:0 8px 23px #0006;text-shadow:0 2px 3px #0008}
+    .role-banner.shooter{background:linear-gradient(135deg,#a62725,#e76224)}
+    .role-banner.keeper{background:linear-gradient(135deg,#075d5b,#18a889)}
+    .role-banner.spectator{background:linear-gradient(135deg,#513477,#a97725)}
+    .role-banner .lang-fr,.role-banner .lang-vi{font-size:clamp(1.4rem,4vw,2.2rem);font-weight:950;line-height:1.15;letter-spacing:.02em}
+    .role-banner .lang-vi{opacity:1;margin-top:5px}
+    .spectator-ranking{background:linear-gradient(135deg,#59451d,#283a43)}
+    .rank-row{display:grid;grid-template-columns:46px minmax(0,1fr) 38px minmax(104px,auto);align-items:center;gap:7px;padding:10px 7px;border-top:1px solid #ffffff42}
+    .rank-medal{font-weight:900;font-size:18px;text-align:center}.rank-name{min-width:0;overflow-wrap:anywhere}.rank-flag{text-align:center;font-size:22px}.rank-score{text-align:right;white-space:nowrap}
+    .rank-score .lang-fr{font-size:13px}.rank-score .lang-vi{font-size:11px}
+    @media(max-width:440px){.rank-row{grid-template-columns:39px minmax(0,1fr) 32px 96px;gap:4px}.rank-score .lang-fr{font-size:11px}.rank-score .lang-vi{font-size:10px}}
     .actor-models{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
     .flag-art{aspect-ratio:3/2;height:auto!important;border:0;background:none;overflow:hidden}
     .flag-art.fr{background:linear-gradient(90deg,#002395 0 33.333%,#FFFFFF 33.333% 66.667%,#ED2939 66.667% 100%)}
@@ -333,8 +344,17 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     if(app.me?.role===2){showHostCharacters(s);return}
     const main=app.me?.role===0,shooter=app.me?.team===s.shootingTeam;
     const p=view(main?(shooter?'Chọn cầu thủ / Choisissez votre joueur':'Chọn thủ môn / Choisissez votre gardien'):'Đang chọn nhân vật / Choix des joueurs','8 GIÂY / 8 SECONDES');
+    const banner=main
+      ?(shooter?bilingual(el('div','role-banner shooter'),'⚽ VOUS ÊTES LE TIREUR','BẠN LÀ NGƯỜI SÚT')
+                :bilingual(el('div','role-banner keeper'),'🧤 VOUS ÊTES LE GARDIEN','BẠN LÀ NGƯỜI BẮT GÔN'))
+      :bilingual(el('div','role-banner spectator'),'📣 VOUS ÊTES SPECTATEUR','BẠN LÀ KHÁN GIẢ');
+    p.prepend(banner);
     resultBanner(p,s);timer(p,'Thời gian chọn / Temps de choix',8000);
-    if(!main){quickInfo(p,'⏳','Choix en cours','Đang chọn nhân vật');return}
+    if(!main){
+      quickInfo(p,'⚽',`${teamLabel(s.shootingTeam)[0]} choisit le tireur`,`${teamLabel(s.shootingTeam)[1]} chọn cầu thủ sút`);
+      quickInfo(p,'🧤',`${teamLabel(1-s.shootingTeam)[0]} choisit le gardien`,`${teamLabel(1-s.shootingTeam)[1]} chọn thủ môn`);
+      return;
+    }
     const cards=el('div','cards');actorOptions(s).forEach((actor,index)=>{
       const b=button('',`char-card${app.selectedChar===index?' selected':''}`,()=>{if(remain()<=0)return;if(send({t:'select_char',charId:index})){app.selectedChar=index;cards.querySelectorAll('button').forEach(x=>x.classList.toggle('selected',Number(x.dataset.char)===index))}});
       b.dataset.char=index;
@@ -377,8 +397,20 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     const gold=el('div','honor gold');gold.append(bilingual(el('h3',''),`🏆 ÉQUIPE GAGNANTE · ${teamLabel(s.winnerTeam)[0]}`,`Đội chiến thắng · ${teamLabel(s.winnerTeam)[1]}`));nameChips(gold,s.winners);winners.append(gold);
     const silver=el('div','honor');silver.append(bilingual(el('h3',''),`🥈 DEUXIÈME PLACE · ${teamLabel(1-s.winnerTeam)[0]}`,`Đội về nhì · ${teamLabel(1-s.winnerTeam)[1]}`));nameChips(silver,s.runnersUp);winners.append(silver);
     const predictors=el('div','honor gold');predictors.append(bilingual(el('h3',''),'📣 BONS PRONOSTICS','Khán giả đoán đúng'));nameChips(predictors,s.correctPredictors);winners.append(predictors);
-    const best=el('div','honor gold');best.append(bilingual(el('h3',''),'🏅 MEILLEURS SPECTATEURS','Khán giả trả lời đúng nhiều nhất'));
-    nameChips(best,(s.topSpectators||[]).map(x=>`${x.name} · ${x.correct}`));winners.append(best);
+    const best=el('div','honor gold spectator-ranking');
+    best.append(bilingual(el('h3',''),'🏅 MEILLEURS SPECTATEURS (QUIZ)','BẢNG VÀNG KHÁN GIẢ TRẢ LỜI ĐÚNG NHIỀU NHẤT'));
+    const ranks=s.spectatorRanking||[];
+    if(!ranks.length)best.append(bilingual(el('p','muted'),'Aucun spectateur classé','Chưa có khán giả xếp hạng'));
+    ranks.forEach((entry,index)=>{
+      const row=el('div','rank-row');
+      const medal=['🥇','🥈','🥉'][index]||'🏅';
+      row.append(el('span','rank-medal',`${medal} ${entry.rank||index+1}`),
+                 el('strong','rank-name',entry.name),
+                 el('span','rank-flag',TEAM_FLAG[entry.team]||'⚽'),
+                 bilingual(el('span','rank-score'),`${entry.correct}/${entry.total} bonnes réponses`,`${entry.correct}/${entry.total} câu đúng`));
+      best.append(row);
+    });
+    winners.append(best);
     p.append(winners);if(app.me?.host)p.append(button('CHƠI LẠI / REJOUER','secondary wide',openHost));
   }
   function showJoinAvailability(){

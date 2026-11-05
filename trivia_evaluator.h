@@ -62,6 +62,7 @@ class TriviaEvaluator {
     const uint64_t bit = uint64_t{1} << memberSlot;
     answered_[t] |= bit;
     choices_[t][memberSlot] = answerIdx;
+    choiceElapsedMs_[t][memberSlot] = static_cast<uint32_t>(now - startMs_);
     return true;
   }
 
@@ -97,6 +98,11 @@ class TriviaEvaluator {
     return finished_ && t < 2 && memberSlot < total_[t] &&
            choices_[t][memberSlot] == correctIdx_;
   }
+  uint32_t choiceTimeMs(Team team, uint8_t memberSlot) const {
+    const uint8_t t = static_cast<uint8_t>(team);
+    return finished_ && t < 2 && memberSlot < total_[t]
+        ? choiceElapsedMs_[t][memberSlot] : 0;
+  }
   uint8_t correctCount(Team team) const { return correct_[static_cast<uint8_t>(team)]; }
   uint8_t answeredCount(Team team) const {
     return static_cast<uint8_t>(__builtin_popcountll(answered_[static_cast<uint8_t>(team)]));
@@ -114,6 +120,7 @@ class TriviaEvaluator {
   LaneRng rng_;
   uint64_t answered_[2] = {0, 0};
   uint8_t choices_[2][MAX_MEMBERS_PER_TEAM]{};
+  uint32_t choiceElapsedMs_[2][MAX_MEMBERS_PER_TEAM]{};
   uint32_t startMs_ = 0;
   uint32_t durationMs_ = TRIVIA_MS;
   uint8_t total_[2] = {0, 0};
@@ -124,7 +131,10 @@ class TriviaEvaluator {
   TriviaResult result_{};
 
   void memsetChoices() {
-    for (auto& team : choices_)
-      for (auto& choice : team) choice = 255;
+    for (uint8_t team = 0; team < 2; ++team)
+      for (uint8_t slot = 0; slot < MAX_MEMBERS_PER_TEAM; ++slot) {
+        choices_[team][slot] = 255;
+        choiceElapsedMs_[team][slot] = 0;
+      }
   }
 };
