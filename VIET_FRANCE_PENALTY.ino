@@ -21,7 +21,8 @@ enum CommandType : uint8_t {
   CMD_CONNECT, CMD_DISCONNECT, CMD_HELLO, CMD_JOIN, CMD_PREDICT,
   CMD_HOST_START, CMD_TUTORIAL_NEXT, CMD_HOST_SETTINGS, CMD_HOST_REPLAY,
   CMD_SELECT_ANS, CMD_SELECT_CHAR, CMD_SHOOT, CMD_SAVE, CMD_PING,
-  CMD_HOST_BOTS, CMD_HOST_RESET, CMD_TEST_BLOCK, CMD_TEST_GOAL, CMD_TEST_VICTORY
+  CMD_HOST_BOTS, CMD_HOST_RESET, CMD_TEST_BLOCK, CMD_TEST_GOAL, CMD_TEST_VICTORY,
+  CMD_CLAIM_HOST
 };
 
 struct Command {
@@ -30,9 +31,12 @@ struct Command {
   uint32_t receivedAt;
   char name[32];
   char playerId[25];
+  char previousPlayerId[25];
+  char ipCode[24];
   int8_t value;
   int8_t team;
   uint32_t durationMs;
+  bool resumeSession;
 };
 
 static QueueHandle_t commandQueue;
@@ -44,6 +48,7 @@ static PlayerManager players;
 static TriviaEvaluator trivia;
 struct HostSession {
   char token[25] = {};
+  char ipCode[24] = {};
   uint32_t clientId = 0;
 };
 static HostSession host;
@@ -248,11 +253,14 @@ static void sendJoined(const Player& player) {
 static bool hostAuthorized(const Command& cmd) { return host.clientId == cmd.clientId; }
 
 static void sendIdentity(uint32_t clientId, bool owner) {
-  StaticJsonDocument<160> doc;
+  StaticJsonDocument<192> doc;
   doc["t"] = "identity";
   doc["role"] = owner ? "HOST" : "GUEST";
   doc["host"] = owner;
-  if (owner) doc["playerId"] = host.token;
+  if (owner) {
+    doc["playerId"] = host.token;
+    doc["ipCode"] = host.ipCode;
+  }
   sendJson(clientId, doc);
   sendState(clientId);
 }
@@ -269,7 +277,8 @@ static void startCoin(uint32_t now) {
 }
 
 static void resetMatch(uint32_t now) {
-  players.clearPredictions();
+  players.clearAll();
+  soloMode = false;
   score[TEAM_FR] = score[TEAM_VN] = 0;
   selectedChar[TEAM_FR] = selectedChar[TEAM_VN] = 255;
   shootDir = saveDir = blockedLane = -1;
@@ -309,13 +318,31 @@ static void processCommand(const Command& cmd, uint32_t now) {
   }
   if (cmd.type == CMD_HELLO) {
     if (!cmd.playerId[0]) { sendError(cmd.clientId, "Thiếu mã thiết bị / Identifiant absent"); return; }
-    if (players.findByClient(cmd.clientId)) {
-      sendIdentity(cmd.clientId, false); return;
-    }
     if (!host.token[0]) strcpy(host.token, cmd.playerId);
     const bool owner = strcmp(host.token, cmd.playerId) == 0;
+    if (cmd.value && state == STATE_LOBBY && !owner) {
+      bool removed = players.removeById(cmd.previousPlayerId);
+      if (!removed) removed = players.removeById(cmd.playerId);
+      if (removed) sendState();
+    }
     if (owner) host.clientId = cmd.clientId;
     sendIdentity(cmd.clientId, owner);
+    if (!owner && !cmd.value && cmd.resumeSession)
+      if (Player* player = players.reconnectById(cmd.clientId, cmd.playerId)) sendJoined(*player);
+    return;
+  }
+  if (cmd.type == CMD_CLAIM_HOST) {
+    if (!cmd.playerId[0] || strcmp(cmd.ipCode, host.ipCode) != 0) {
+      sendError(cmd.clientId, "Code IP invalide / Mã IP không đúng"); return;
+    }
+    const uint32_t previousHostClient = host.clientId;
+    players.removeByClient(cmd.clientId);
+    strcpy(host.token, cmd.playerId);
+    host.clientId = cmd.clientId;
+    if (previousHostClient && previousHostClient != cmd.clientId)
+      sendIdentity(previousHostClient, false);
+    sendIdentity(cmd.clientId, true);
+    sendState();
     return;
   }
   if (cmd.type == CMD_PING) {
@@ -593,6 +620,18 @@ static void onWsEvent(AsyncWebSocket*, AsyncWebSocketClient* client,
       if (!deviceId[0]) deviceId = doc["playerId"] | "";
       if (strlen(deviceId) >= sizeof(cmd.playerId)) return;
       strncpy(cmd.playerId, deviceId, sizeof(cmd.playerId) - 1);
+      const char* previousId = doc["previousPlayerId"] | "";
+      if (strlen(previousId) >= sizeof(cmd.previousPlayerId)) return;
+      strncpy(cmd.previousPlayerId, previousId, sizeof(cmd.previousPlayerId) - 1);
+      cmd.value = doc["freshPage"] | 0;
+      cmd.resumeSession = doc["resumeSession"] | false;
+    } else if (!strcmp(t, "claim_host")) {
+      cmd.type = CMD_CLAIM_HOST;
+      const char* deviceId = doc["deviceId"] | "";
+      const char* ipCode = doc["ipCode"] | "";
+      if (strlen(deviceId) >= sizeof(cmd.playerId) || strlen(ipCode) >= sizeof(cmd.ipCode)) return;
+      strncpy(cmd.playerId, deviceId, sizeof(cmd.playerId) - 1);
+      strncpy(cmd.ipCode, ipCode, sizeof(cmd.ipCode) - 1);
     } else if (!strcmp(t, "join")) {
       cmd.type = CMD_JOIN;
       const char* name = doc["name"] | "";
@@ -646,6 +685,8 @@ void setup() {
   commandQueue = xQueueCreate(32, sizeof(Command));
   if (!commandQueue) { Serial.println("Command queue allocation failed"); return; }
   randomSeed(esp_random());
+  snprintf(host.ipCode, sizeof(host.ipCode), "192.168.4.1-%08lu",
+           static_cast<unsigned long>(esp_random() % 100000000UL));
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
   if (!WiFi.softAP(AP_SSID, nullptr, 1, false, MAX_CLIENTS)) {

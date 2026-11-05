@@ -50,4 +50,19 @@ int main() {
   solo.removeBots();
   assert(solo.count(TEAM_FR) == 1 && solo.count(TEAM_VN) == 1);
   assert(solo.hasMain(TEAM_FR) && solo.hasMain(TEAM_VN));
+
+  PlayerManager fresh;
+  assert(fresh.join(11, "Lan", TEAM_VN, "device-lan"));
+  assert(fresh.join(12, "Fan", TEAM_VN, "device-fan"));
+  assert(fresh.removeById("device-lan"));
+  assert(!fresh.hasMain(TEAM_VN));
+  assert(fresh.count(TEAM_VN) == 1);
+  assert(fresh.join(13, "Lan", TEAM_FR, "device-lan")->role == ROLE_MAIN_PLAYER);
+  fresh.disconnect(13);
+  assert(fresh.reconnectById(14, "device-lan") == fresh.findByClient(14));
+  assert(fresh.removeByClient(14));
+  assert(!fresh.hasMain(TEAM_FR));
+  fresh.clearAll();
+  assert(fresh.totalCount() == 0);
+  assert(!fresh.hasMain(TEAM_FR) && !fresh.hasMain(TEAM_VN));
 }

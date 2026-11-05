@@ -113,6 +113,13 @@ static const char WEB_PLAYER_HTML[] PROGMEM = R"VFPWEB(<!doctype html>
     .tutorial-card{border-radius:16px;padding:12px 14px}.tutorial-card p{margin-top:4px}.tutorial-card .lang-fr{font-size:15px}.tutorial-card .lang-vi{font-size:12px}
     .tutorial-card{display:flex;align-items:center;gap:13px}.tutorial-card .icon{font-size:29px;flex:none}
     .actor-models{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+    .flag-art{aspect-ratio:3/2;height:auto!important;border:0;background:none;overflow:hidden}
+    .flag-art.fr{background:linear-gradient(90deg,#002395 0 33.333%,#FFFFFF 33.333% 66.667%,#ED2939 66.667% 100%)}
+    .flag-art.vn{background:#DA251D}
+    .flag-art.vn::after{content:'';position:absolute;left:50%!important;top:20%!important;transform:translateX(-50%);width:40%;height:60%;background:#FFFF00;clip-path:polygon(50% 0%,61.23% 34.55%,97.55% 34.55%,68.17% 56.90%,79.39% 90.45%,50% 69.10%,20.61% 90.45%,31.83% 56.90%,2.45% 34.55%,38.77% 34.55%)}
+    .host-ip-code{padding:12px;border:1px solid #ffd366;border-radius:12px;background:#132f42;color:#ffe390;font:800 18px ui-monospace,monospace;text-align:center;user-select:all}
+    .host-claim{display:grid;gap:9px;margin:14px 0}
+    [hidden]{display:none!important}
     .stage{position:relative}.actor-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .arena-clock{position:absolute;left:50%;top:13px;transform:translateX(-50%);min-width:140px;padding:7px 14px;border:2px solid #ffd66b;border-radius:18px;background:#092d34d9;text-align:center;color:#fff;box-shadow:0 0 20px #ffd66b66}
     .arena-clock .timer-num{display:block;font-size:clamp(34px,8vw,70px);font-weight:900;line-height:1;color:#ffe385}
@@ -209,7 +216,7 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     fr:{shoot:[{name:'Kylian Mbappé',model:'mbappe'},{name:'Zinedine Zidane',model:'zidane'}],keep:[{name:'Hugo Lloris',model:'lloris'}]},
     vn:{shoot:[{name:'Quang Hải',model:'quang-hai'},{name:'Công Phượng',model:'cong-phuong'}],keep:[{name:'Đặng Văn Lâm',model:'van-lam'}]}
   };
-  const app={ws:null,me:null,game:null,saved:null,deviceId:null,identityReady:false,chosenTeam:null,selectedAnswer:null,selectedChar:null,selectedDir:null,
+  const app={ws:null,me:null,game:null,saved:null,deviceId:null,previousPlayerId:'',freshPage:true,hostIpCode:'',identityReady:false,chosenTeam:null,selectedAnswer:null,selectedChar:null,selectedDir:null,
     deadline:0,phaseStart:0,coinWinner:null,coinStopped:false,coinStart:0,triviaResult:null,characters:null,shot:null,
     hostPin:'',hostVisible:false,stageCanvas:null,actorSvg:null,lastActorFrame:-1000,timerText:null,timerBar:null,toastTimer:0,reconnectTimer:0,lastPong:0,phase:''};
   const now=()=>performance.now();
@@ -241,9 +248,8 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
       stadiumAudio.unlock();
       const name=input.value.trim();if(!name||app.chosenTeam===null)return;
       if(new TextEncoder().encode(name).length>=32){toast('Tên tối đa 31 byte / Pseudo : 31 octets maximum');return}
-      const same=app.saved?.name===name&&app.saved?.team===app.chosenTeam;
-      const identity={name,team:app.chosenTeam,playerId:same&&app.saved.playerId||makePlayerId()};
-      if(send({t:'join',...identity})){app.saved=identity;try{localStorage.setItem('vfpIdentity',JSON.stringify(identity))}catch{}}
+      const identity={name,team:app.chosenTeam,playerId:app.deviceId};
+      if(send({t:'join',...identity}))app.saved=identity;
     });
     const updateJoin=()=>{join.disabled=!input.value.trim()||app.chosenTeam===null};
     input.addEventListener('input',updateJoin);
@@ -406,8 +412,17 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     p.append(footer);
   }
   function render(){document.body.classList.toggle('host-display',app.me?.role===2);$('hostBar').hidden=app.me?.role!==2;document.body.classList.toggle('tutorial-active',app.game?.state==='TUTORIAL_SLIDES'&&!!app.me);document.body.classList.toggle('host-stage-active',app.me?.role===2&&['COIN_TOSS','AIM_STANDOFF','PENALTY_ANIM','MONUMENT_BUILD','VICTORY_CEREMONY'].includes(app.game?.state));updateScore();if(!app.identityReady){view("Đang kết nối / Connexion en cours","VIET–FRANCE PENALTY");return}if(!app.me){showJoin();showJoinAvailability();return}const hostDisplay=app.me.role===2;roleNotice();const s=app.game;if(!s){if(hostDisplay)showHostLobby({});else showLobby({scoreFR:0,scoreVN:0});return}app.phase=s.state;switch(s.state){case 'LOBBY':hostDisplay?showHostLobby(s):showLobby(s);break;case 'TUTORIAL_SLIDES':showTutorial(s);break;case 'COIN_TOSS':showCoin(s);break;case 'COUNTDOWN':showCountdown(s);break;case 'TRIVIA_8S':showTrivia(s);break;case 'CHAR_SELECT_7S':showCharacters(s);break;case 'AIM_STANDOFF':showAim(s);break;case 'PENALTY_ANIM':showShot(s);break;case 'MONUMENT_BUILD':showBuild(s);break;case 'VICTORY_CEREMONY':showVictory(s);break;default:showLobby(s)}}
-  function onState(s){const previous=app.game?.state,previousBeat=app.lastBeat;const changed=previous!==s.state||app.game?.questionId!==s.questionId||app.game?.tutorialSlide!==s.tutorialSlide;app.game=s;app.deadline=now()+(s.remainingMs||0);app.phaseStart=now();if(changed){syncAudioForState(previous,s,previousBeat);app.lastBeat=null;app.selectedDir=null;app.selectedChar=null;if(s.state==='TRIVIA_8S'){app.selectedAnswer=null;app.triviaResult=null;app.triviaProgress=null}if(s.state==='COIN_TOSS'){app.coinStopped=false;app.coinWinner=s.winnerTeam}}render();syncHostPanel()}
-  function onPacket(m){switch(m.t){case 'identity':app.identityReady=true;if(m.host){app.me={role:2,host:true,team:-1,name:'HOST'};app.deviceId=m.playerId||app.deviceId;try{localStorage.setItem('vfpDeviceId',app.deviceId)}catch{}}else{app.me=null;if(app.saved)send({t:'join',name:app.saved.name,team:app.saved.team,playerId:app.saved.playerId})}render();syncHostPanel();break;case 'trivia_progress':app.triviaProgress=m;if(app.me?.role===2&&app.game?.state==='TRIVIA_8S')render();break;case 'choice_ack':break;case 'joined':app.me=m;app.chosenTeam=m.team;app.saved={name:m.name,playerName:m.name,team:m.team,playerId:m.playerId||app.saved?.playerId||makePlayerId(),role:m.role};try{localStorage.setItem('vfpIdentity',JSON.stringify(app.saved))}catch{}toast(m.role===0?`Bạn là người chơi chính / Joueur principal · ${TEAM_NAME[m.team]}`:`Bạn là khán giả / Spectateur · ${TEAM_NAME[m.team]}`);render();syncHostPanel();break;
+  function onState(s){const previous=app.game?.state,previousBeat=app.lastBeat;const changed=previous!==s.state||app.game?.questionId!==s.questionId||app.game?.tutorialSlide!==s.tutorialSlide;if(previous&&previous!=='LOBBY'&&s.state==='LOBBY'&&!app.me?.host){app.me=null;clearTeamSelection()}app.game=s;app.deadline=now()+(s.remainingMs||0);app.phaseStart=now();if(changed){syncAudioForState(previous,s,previousBeat);app.lastBeat=null;app.selectedDir=null;app.selectedChar=null;if(s.state==='TRIVIA_8S'){app.selectedAnswer=null;app.triviaResult=null;app.triviaProgress=null}if(s.state==='COIN_TOSS'){app.coinStopped=false;app.coinWinner=s.winnerTeam}}render();syncHostPanel()}
+  function clearTeamSelection(){app.saved=null;app.chosenTeam=null;app.selectedAnswer=null;app.selectedChar=null;app.selectedDir=null;try{localStorage.removeItem('team');localStorage.removeItem('role');localStorage.removeItem('vfpIdentity')}catch{}}
+  function onPacket(m){switch(m.t){
+    case 'identity':
+      app.identityReady=true;app.hostIpCode=m.host?m.ipCode||'':'';
+      if(m.host){app.me={role:2,host:true,team:-1,name:'HOST'};app.deviceId=m.playerId||app.deviceId;try{localStorage.setItem('vfpDeviceId',app.deviceId)}catch{}}
+      else{app.me=null;clearTeamSelection()}
+      render();syncHostPanel();break;
+    case 'trivia_progress':app.triviaProgress=m;if(app.me?.role===2&&app.game?.state==='TRIVIA_8S')render();break;
+    case 'choice_ack':break;
+    case 'joined':app.me=m;app.chosenTeam=m.team;app.saved={name:m.name,team:m.team,playerId:m.playerId||app.deviceId,role:m.role};toast(m.role===0?`Bạn là người chơi chính / Joueur principal · ${TEAM_NAME[m.team]}`:`Bạn là khán giả / Spectateur · ${TEAM_NAME[m.team]}`);render();syncHostPanel();break;
     case 'state':onState(m);break;case 'predict_prompt':if(app.me&&app.me.role===1&&app.me.prediction<0)render();break;
     case 'predict_ack':if(app.me)app.me.prediction=m.team;toast(`Đã lưu dự đoán / Pronostic enregistré: ${TEAM_NAME[m.team]}`);render();break;
     case 'coin_toss':app.coinWinner=m.winnerTeam;app.coinStopped=false;app.coinStart=now();break;
@@ -416,19 +431,36 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     case 'trivia_result':app.triviaResult=m;toast(m.blockedLane>=0?'Đội bắt gôn khóa một hướng / Le gardien bloque un angle':'Đội sút giữ ba hướng / Le tireur garde trois directions');if(app.game?.state==='CHAR_SELECT_7S'||app.game?.state==='TRIVIA_8S')render();break;
     case 'characters':app.characters={fr:m.fr,vn:m.vn};toast('Nhân vật ra sân / Personnages sélectionnés');break;
     case 'shot':app.shot=m;break;
-    case 'replay':if(app.me?.role===1)app.me.prediction=-1;app.triviaResult=null;app.characters=null;app.shot=null;toast('Trận mới / Nouveau match');break;
+    case 'replay':if(!app.me?.host){app.me=null;clearTeamSelection()}app.triviaResult=null;app.characters=null;app.shot=null;toast('Trận mới / Nouveau match');render();syncHostPanel();break;
     case 'pong':app.lastPong=now();break;
     case 'error':toast(m.message||'Lỗi / Erreur');syncHostPanel();break}}
-  function connect(){clearTimeout(app.reconnectTimer);if(app.ws&&(app.ws.readyState===WebSocket.OPEN||app.ws.readyState===WebSocket.CONNECTING))return;const ws=new WebSocket(`ws://${location.host}/ws`);app.ws=ws;ws.onopen=()=>{setOnline(true);app.lastPong=now();send({t:'hello',deviceId:app.deviceId});send({t:'ping'})};ws.onmessage=e=>{try{onPacket(JSON.parse(e.data))}catch(err){console.warn('Invalid server packet',err)}};ws.onclose=()=>{if(app.ws!==ws)return;setOnline(false);app.reconnectTimer=setTimeout(connect,1200)};ws.onerror=()=>ws.close()}
-  function syncHostPanel(){const owner=!!app.me?.host;$('hostOpen').hidden=!owner;$('hostBar').hidden=!owner;$('hostPinField').hidden=true;bilingual($('hostRoleText'),'ÉCRAN HÔTE','Màn hình chủ');$('hostBots').checked=!!app.game?.soloMode;$('hostBots').disabled=app.game?.state!=='LOBBY';$('hostAction').disabled=app.game?.state!=='LOBBY';$('arenaStart').disabled=app.game?.state!=='LOBBY';$('arenaBots').disabled=app.game?.state!=='LOBBY';bilingual($('arenaBots'),app.game?.soloMode?'DÉSACTIVER BOT':'ACTIVER BOT',app.game?.soloMode?'Tắt Bot':'Bật Bot')}
+  function connect(){clearTimeout(app.reconnectTimer);if(app.ws&&(app.ws.readyState===WebSocket.OPEN||app.ws.readyState===WebSocket.CONNECTING))return;const ws=new WebSocket(`ws://${location.host}/ws`);app.ws=ws;ws.onopen=()=>{setOnline(true);app.lastPong=now();if(send({t:'hello',deviceId:app.deviceId,freshPage:app.freshPage?1:0,previousPlayerId:app.previousPlayerId,resumeSession:!!app.me&&!app.me.host})){app.freshPage=false;app.previousPlayerId=''}send({t:'ping'})};ws.onmessage=e=>{try{onPacket(JSON.parse(e.data))}catch(err){console.warn('Invalid server packet',err)}};ws.onclose=()=>{if(app.ws!==ws)return;setOnline(false);app.reconnectTimer=setTimeout(connect,1200)};ws.onerror=()=>ws.close()}
+  function syncHostPanel(){
+    const owner=!!app.me?.host;$('hostOpen').hidden=false;$('hostBar').hidden=!owner;
+    $('hostIpBlock').hidden=!owner;$('hostIpCode').textContent=owner?app.hostIpCode:'';
+    $('hostPinField').hidden=owner;$('hostClaim').hidden=owner;
+    bilingual($('hostRoleText'),owner?'ÉCRAN HÔTE':'DEVENIR HÔTE',owner?'Màn hình chủ':'Nhập mã IP để nhận quyền Host');
+    for(const item of $('hostOverlay').querySelectorAll('.host-actions,.host-section,.switch-row,.tiny.muted,.host-grid'))item.hidden=!owner;
+    $('hostBots').checked=!!app.game?.soloMode;$('hostBots').disabled=app.game?.state!=='LOBBY';
+    $('hostAction').disabled=app.game?.state!=='LOBBY';$('arenaStart').disabled=app.game?.state!=='LOBBY';$('arenaBots').disabled=app.game?.state!=='LOBBY';
+    bilingual($('arenaBots'),app.game?.soloMode?'DÉSACTIVER BOT':'ACTIVER BOT',app.game?.soloMode?'Tắt Bot':'Bật Bot');
+  }
   function hostCommand(t,extra={}){if(!app.me?.host){toast('Chỉ Chủ phòng / Hôte uniquement');return false}return send({t,...extra})}
-  function openHost(){if(!app.me?.host)return;app.hostVisible=true;$('hostOverlay').hidden=false;syncHostPanel()}
+  function openHost(){app.hostVisible=true;$('hostOverlay').hidden=false;syncHostPanel()}
   function closeHost(){app.hostVisible=false;$('hostOverlay').hidden=true}
   $('hostOpen').addEventListener('click',openHost);$('hostClose').addEventListener('click',closeHost);$('hostOverlay').addEventListener('click',e=>{if(e.target===$('hostOverlay'))closeHost()});$('hostAction').addEventListener('click',()=>{stadiumAudio.unlock();if(hostCommand('host_start')){backgroundMusic.startFromGesture();closeHost()}});$('hostReset').addEventListener('click',()=>{if(hostCommand('host_reset')){backgroundMusic.stop();closeHost()}});$('hostBots').addEventListener('change',e=>{if(!hostCommand('host_bots',{enabled:e.target.checked?1:0}))e.target.checked=!e.target.checked});$('hostBlock').addEventListener('click',()=>{if(hostCommand('test_block'))closeHost()});$('hostGoalVN').addEventListener('click',()=>{if(hostCommand('test_goal',{team:1}))closeHost()});$('hostGoalFR').addEventListener('click',()=>{if(hostCommand('test_goal',{team:0}))closeHost()});$('hostVictory').addEventListener('click',()=>{if(hostCommand('test_victory'))closeHost()});
   $('arenaStart').addEventListener('click',()=>{stadiumAudio.unlock();if(hostCommand('host_start'))backgroundMusic.startFromGesture()});
   $('arenaSettings').addEventListener('click',openHost);
   $('arenaBots').addEventListener('click',()=>hostCommand('host_bots',{enabled:app.game?.soloMode?0:1}));
   $('arenaReset').addEventListener('click',()=>{if(hostCommand('host_reset'))backgroundMusic.stop()});
+  const hostIpBlock=el('div','host-claim');hostIpBlock.id='hostIpBlock';hostIpBlock.append(bilingual(el('strong',''),'CODE IP HÔTE','Mã IP Host'));
+  const hostIpCode=el('div','host-ip-code','');hostIpCode.id='hostIpCode';hostIpBlock.append(hostIpCode);
+  $('hostRoleText').after(hostIpBlock);
+  bilingual($('hostPinField').querySelector('label'),'ENTREZ LE CODE IP','Nhập mã IP để nhận quyền Host');
+  $('hostPin').type='text';$('hostPin').inputMode='text';$('hostPin').autocomplete='off';
+  const hostClaim=button('Xác nhận / Valider','primary wide',()=>{const ipCode=$('hostPin').value.trim();if(!ipCode){toast('Nhập mã IP / Entrez le code IP');return}if(send({t:'claim_host',ipCode,deviceId:app.deviceId}))$('hostPin').value=''});
+  hostClaim.id='hostClaim';$('hostPinField').after(hostClaim);
+  $('hostOpen').title='Paramètres / Cài đặt';$('hostOpen').setAttribute('aria-label','Paramètres / Cài đặt');
   bilingual($('hostTitle'),'⚙️ PARAMÈTRES','Cài đặt');
   bilingual($('hostBots').closest('label').querySelector('span'),'🤖 MODE SOLO','Bot đấu tập');
   bilingual($('hostBlock'),'🔒 BLOQUER UN ANGLE','Khóa 1 góc');
@@ -448,7 +480,23 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href',`#${actor.model}-${view}`);use.setAttribute('width','240');use.setAttribute('height','440');svg.append(use);return svg;
   }
   function pixelRect(ctx,x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}
-  function drawFlag(ctx,team,x,y,w=52,h=32){pixelRect(ctx,x,y,w,h,team===0?'#ffffff':'#d4283e');if(team===0){pixelRect(ctx,x,y,w/3,h,'#2255ac');pixelRect(ctx,x+w*2/3,y,w/3,h,'#d52e40')}else{ctx.fillStyle='#ffd44f';ctx.font='bold 25px system-ui';ctx.textAlign='center';ctx.fillText('★',x+w/2,y+h-4)}ctx.strokeStyle='#071a2b';ctx.strokeRect(x,y,w,h)}
+  function drawFlag(ctx,team,x,y,w=54,h=36){
+    const flagW=Math.min(w,h*1.5),flagH=flagW*2/3,flagX=x+(w-flagW)/2,flagY=y+(h-flagH)/2;
+    if(team===0){
+      ctx.fillStyle='#002395';ctx.fillRect(flagX,flagY,flagW/3,flagH);
+      ctx.fillStyle='#FFFFFF';ctx.fillRect(flagX+flagW/3,flagY,flagW/3,flagH);
+      ctx.fillStyle='#ED2939';ctx.fillRect(flagX+flagW*2/3,flagY,flagW/3,flagH);
+    }else{
+      ctx.fillStyle='#DA251D';ctx.fillRect(flagX,flagY,flagW,flagH);
+      const centerX=flagX+flagW/2,centerY=flagY+flagH/2,R=flagH*.3,r=R*.382;
+      ctx.beginPath();for(let i=0;i<10;i++){
+        const angle=-Math.PI/2+i*Math.PI/5,radius=i%2?r:R;
+        const sx=centerX+Math.cos(angle)*radius,sy=centerY+Math.sin(angle)*radius;
+        if(i===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);
+      }
+      ctx.closePath();ctx.fillStyle='#FFFF00';ctx.fill();
+    }
+  }
   function drawEiffel(ctx,x,y,scale=1,parts=5,fall=0,from=0){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);for(let i=from;i<parts;i++){const yy=-i*16+(i===parts-1?fall:0),half=31-i*6;pixelRect(ctx,-half,yy-3,half*2,4,'#f4c56f');pixelRect(ctx,-half+4,yy-16,4,14,'#d2934e');pixelRect(ctx,half-8,yy-16,4,14,'#d2934e');ctx.strokeStyle='#ffd77e';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-half+6,yy-15);ctx.lineTo(0,yy-2);ctx.lineTo(half-6,yy-15);ctx.stroke()}if(parts>=5&&fall===0)pixelRect(ctx,-2,-91,4,12,'#ffe39d');ctx.restore()}
   function drawDragon(ctx,x,y,scale=1,parts=5,fall=0,from=0){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);for(let i=from;i<parts;i++){let xx=i*31,dy=i===parts-1?fall:0;pixelRect(ctx,xx,-5+dy,28,5,'#edab4f');ctx.strokeStyle='#ffd65e';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(xx+2,-7+dy);ctx.lineTo(xx+15,-22-(i&1)*6+dy);ctx.lineTo(xx+28,-8+dy);ctx.stroke();if(i===4){pixelRect(ctx,xx+27,-24+dy,13,8,'#e29f3d');pixelRect(ctx,xx+36,-26+dy,3,3,'#fff29a')}}ctx.restore()}
   function drawGoal(ctx,blocked=-1){pixelRect(ctx,35,68,290,97,'#e8f1f622');ctx.strokeStyle='#f5f7f1';ctx.lineWidth=5;ctx.strokeRect(35,68,290,97);ctx.strokeStyle='#d4e8ec77';ctx.lineWidth=1;for(let x=58;x<325;x+=27){ctx.beginPath();ctx.moveTo(x,70);ctx.lineTo(x,164);ctx.stroke()}for(let y=87;y<165;y+=18){ctx.beginPath();ctx.moveTo(36,y);ctx.lineTo(324,y);ctx.stroke()}if(blocked>=0){const x=39+blocked*95;pixelRect(ctx,x,72,93,89,'#8e182799');ctx.save();ctx.beginPath();ctx.rect(x,72,93,89);ctx.clip();ctx.strokeStyle='#ff5761';ctx.lineWidth=5;for(let d=-90;d<150;d+=18){ctx.beginPath();ctx.moveTo(x+d,72);ctx.lineTo(x+d+90,162);ctx.stroke()}ctx.restore();ctx.fillStyle='#fff';ctx.font='bold 26px system-ui';ctx.textAlign='center';ctx.fillText('🔒',x+46,125)}}
@@ -758,8 +806,8 @@ function renderRestoredShotBall(time){const b=getRestoredShotState(time).ball;if
     if(app.stageCanvas&&app.game){const ctx=app.stageCanvas.getContext('2d');switch(app.game.state){case 'COIN_TOSS':drawCoinCanvas(ctx,t);break;case 'COUNTDOWN':drawCountdownCanvas(ctx);break;case 'PENALTY_ANIM':drawShotCanvas(ctx,t,app.game);break;case 'MONUMENT_BUILD':drawBuildCanvas(ctx,t,app.game);break;case 'VICTORY_CEREMONY':drawVictoryCanvas(ctx,t,app.game);break}}
     requestAnimationFrame(tick);
   }
-  try{app.saved=JSON.parse(localStorage.getItem('vfpIdentity')||'null');if(app.saved){app.saved.name=app.saved.name||app.saved.playerName;app.saved.playerId=app.saved.playerId||makePlayerId();app.chosenTeam=app.saved.team;localStorage.setItem('vfpIdentity',JSON.stringify(app.saved))}}catch{}
-  try{app.deviceId=localStorage.getItem('vfpDeviceId')||app.saved?.playerId||makePlayerId();localStorage.setItem('vfpDeviceId',app.deviceId)}catch{app.deviceId=makePlayerId()}$('hostOpen').hidden=true;if(location.pathname==='/host')setTimeout(openHost,200);render();connect();requestAnimationFrame(tick);
+  try{const old=JSON.parse(localStorage.getItem('vfpIdentity')||'null');app.previousPlayerId=old?.playerId||'';localStorage.removeItem('team');localStorage.removeItem('role');localStorage.removeItem('vfpIdentity')}catch{}
+  try{app.deviceId=localStorage.getItem('vfpDeviceId')||app.previousPlayerId||makePlayerId();localStorage.setItem('vfpDeviceId',app.deviceId)}catch{app.deviceId=makePlayerId()}$('hostOpen').hidden=false;if(location.pathname==='/host')setTimeout(openHost,200);render();connect();requestAnimationFrame(tick);
   </script>
 </body>
 </html>

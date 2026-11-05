@@ -79,6 +79,45 @@ class PlayerManager {
     }
   }
 
+  bool removeById(const char* playerId) {
+    if (!playerId || !playerId[0]) return false;
+    for (auto& player : players_) {
+      if (player.used && !player.bot && strcmp(player.playerId, playerId) == 0) {
+        const Team team = player.team;
+        player = Player{};
+        reindexTeam(team);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Player* reconnectById(uint32_t clientId, const char* playerId) {
+    if (!clientId || !playerId || !playerId[0]) return nullptr;
+    for (auto& player : players_) if (player.used && !player.bot &&
+                                     strcmp(player.playerId, playerId) == 0) {
+      player.clientId = clientId;
+      player.connected = true;
+      return &player;
+    }
+    return nullptr;
+  }
+
+  bool removeByClient(uint32_t clientId) {
+    if (Player* player = findByClient(clientId)) {
+      const Team team = player->team;
+      *player = Player{};
+      reindexTeam(team);
+      return true;
+    }
+    return false;
+  }
+
+  void clearAll() {
+    for (auto& player : players_) player = Player{};
+    hasMainPlayer_[TEAM_FR] = hasMainPlayer_[TEAM_VN] = false;
+  }
+
   Player* findByClient(uint32_t clientId) {
     if (!clientId) return nullptr;
     for (auto& player : players_)
@@ -149,6 +188,14 @@ class PlayerManager {
   }
 
  private:
+  void reindexTeam(Team team) {
+    uint8_t slot = 0;
+    hasMainPlayer_[team] = false;
+    for (auto& player : players_) if (player.used && player.team == team) {
+      player.teamSlot = slot++;
+      if (player.role == ROLE_MAIN_PLAYER) hasMainPlayer_[team] = true;
+    }
+  }
   Player players_[MAX_CLIENTS]{};
   bool hasMainPlayer_[2] = {false, false};
 };
