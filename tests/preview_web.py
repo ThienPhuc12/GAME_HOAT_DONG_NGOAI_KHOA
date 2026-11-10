@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 base = {
     "t": "state", "scoreFR": 3, "scoreVN": 4, "shootingTeam": 1,
     "remainingMs": 3000, "membersFR": 3, "membersVN": 4,
-    "blockedZones": [1, 4], "activeZones": 4, "charFR": 0, "charVN": 1,
+    "blockedLane": 1, "activeLanes": 2, "charFR": 0, "charVN": 1,
     "pctFR": 33.3, "pctVN": 75.0,
 }
 states = {
@@ -28,9 +28,9 @@ states = {
     "characters": {"state": "CHAR_SELECT_8S", "remainingMs": 8000},
     "aim": {"state": "AIM_STANDOFF", "remainingMs": 7000},
     "host_aim": {"state": "AIM_STANDOFF", "remainingMs": 7000},
-    "shot": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootZone": 2, "saveZone1": 0, "saveZone2": 3, "goal": True},
-    "shot_save": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootZone": 5, "saveZone1": 0, "saveZone2": 5, "goal": False},
-    "host_shot_save": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootZone": 5, "saveZone1": 0, "saveZone2": 5, "goal": False},
+    "shot": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootDir": 2, "saveDir": 0, "goal": True},
+    "shot_save": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootDir": 0, "saveDir": 0, "goal": False},
+    "host_shot_save": {"state": "PENALTY_ANIM", "remainingMs": 2800, "shootDir": 0, "saveDir": 0, "goal": False},
     "build": {"state": "MONUMENT_BUILD", "remainingMs": 2500, "goal": True},
     "victory": {"state": "VICTORY_CEREMONY", "scoreFR": 4, "scoreVN": 5,
                 "winnerTeam": 1, "winners": ["Quang Hải", "Lan", "Minh"],
