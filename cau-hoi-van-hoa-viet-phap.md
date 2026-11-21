@@ -67,3 +67,5 @@
 
 20. **Ở cả Việt Nam và Pháp, môn thể thao được yêu thích nhất là gì?**
     Đáp án: Bóng đá
+21.
+Đáp án: 
